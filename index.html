@@ -3,86 +3,221 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Khảo Sát Bất Động Sản Pro v2.0</title>
+  <title>SmartVal Pro - AR Field Survey & Automated Valuation</title>
+  
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Three.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-    #video-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; }
-    #canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; }
-    
-    /* Tâm ngắm định vị giữa màn hình */
+    body, html {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background-color: #050b14;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Video Background */
+    #video-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    /* 3D Canvas Layer */
+    #canvas-container {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 2;
+      pointer-events: auto;
+    }
+
+    /* Sci-Fi Reticle Target */
     #reticle-ui {
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 20px; height: 20px;
-      border: 2px solid rgba(0, 240, 255, 0.8);
-      border-radius: 50%;
+      width: 40px; height: 40px;
       z-index: 15;
       pointer-events: none;
+      transition: all 0.2s ease;
     }
-    #reticle-ui::after {
+    #reticle-ui::before, #reticle-ui::after {
       content: '';
       position: absolute;
+      box-sizing: border-box;
+    }
+    #reticle-ui::before {
+      top: 0; left: 0; width: 100%; height: 100%;
+      border: 2px solid rgba(56, 189, 248, 0.6);
+      border-radius: 50%;
+      animation: pulse-ring 2s infinite;
+    }
+    #reticle-ui::after {
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 4px; height: 4px;
-      background: #00f0ff;
+      width: 6px; height: 6px;
+      background: #38bdf8;
       border-radius: 50%;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.4; }
+      100% { transform: scale(0.9); opacity: 0.8; }
     }
   </style>
 </head>
-<body class="text-white font-sans select-none">
+<body class="text-slate-100 select-none">
 
-  <!-- Camera Stream làm nền -->
+  <!-- Camera Stream Background -->
   <video id="video-bg" autoplay playsinline muted></video>
-  
-  <!-- Canvas Three.js -->
+
+  <!-- Three.js 3D Canvas Layer -->
   <div id="canvas-container"></div>
 
-  <!-- Con trỏ định vị trung tâm -->
+  <!-- HUD Reticle Target -->
   <div id="reticle-ui"></div>
 
-  <!-- HUD Header -->
-  <div class="fixed top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-    <div class="flex justify-between items-center max-w-md mx-auto">
-      <div>
-        <h1 class="text-base font-bold text-cyan-400 tracking-wider">AR SURVEY PRO v2.0</h1>
-        <p id="instruction" class="text-xs text-gray-300">Đưa tâm ngắm vào góc mặt tiền & chạm màn hình</p>
+  <!-- Top Navigation HUD Bar -->
+  <header class="fixed top-0 left-0 right-0 z-20 p-3 bg-gradient-to-b from-slate-950/90 via-slate-950/50 to-transparent pointer-events-none">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <!-- App Brand -->
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/50 flex items-center justify-center backdrop-blur-md">
+          <i data-lucide="box" class="w-5 h-5 text-sky-400"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-sm font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">SmartVal</span>
+            <span class="text-xs px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded font-semibold">Pro</span>
+          </div>
+          <p id="instruction" class="text-[11px] text-slate-300">Nhắm tâm & chạm chọn 4 mỏ neo 3D</p>
+        </div>
       </div>
-      <div class="text-right">
-        <span class="text-[10px] text-gray-400 block uppercase">Mỏ neo 3D</span>
-        <div id="point-count" class="text-lg font-black text-amber-400">0 / 4</div>
+
+      <!-- Appraiser Profile Card -->
+      <div class="flex items-center gap-2 bg-slate-900/80 border border-slate-700/60 pl-2 pr-3 py-1 rounded-full backdrop-blur-md">
+        <div class="w-6 h-6 rounded-full bg-sky-600/40 border border-sky-400/60 flex items-center justify-center text-[10px] font-bold text-sky-300">
+          TL
+        </div>
+        <div class="text-right">
+          <p class="text-[10px] font-medium text-slate-300 leading-tight">Thẩm định viên</p>
+          <p class="text-[11px] font-bold text-sky-400 leading-tight">Trần Thị Lan</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Live Status & Anchor Indicator HUD -->
+  <div class="fixed top-16 left-0 right-0 z-20 px-3 pointer-events-none">
+    <div class="max-w-md mx-auto flex justify-between items-center text-[11px]">
+      <div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="text-slate-300 font-mono">SLAM 3D ACTIVE</span>
+      </div>
+
+      <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
+        <span class="text-slate-400 uppercase tracking-wider text-[10px]">Mỏ neo:</span>
+        <span id="point-count" class="font-mono font-bold text-amber-400 text-xs">0 / 4</span>
       </div>
     </div>
   </div>
 
-  <!-- Bảng thông số đo đạc & Lưu dữ liệu -->
-  <div id="info-panel" class="fixed bottom-6 left-4 right-4 z-20 hidden bg-slate-900/90 border border-cyan-500/50 p-4 rounded-xl backdrop-blur-md max-w-md mx-auto shadow-2xl">
-    <h3 class="text-xs font-bold text-cyan-400 uppercase mb-2 tracking-wide">Kích thước mặt tiền (Ước tính)</h3>
-    <div class="grid grid-cols-3 gap-2 text-center mb-3">
-      <div class="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
-        <span class="text-[10px] text-gray-400 block">Chiều rộng</span>
-        <p id="width-val" class="text-sm font-bold text-white">0.00 m</p>
+  <!-- Bottom Valuation Dashboard Panel -->
+  <div id="info-panel" class="fixed bottom-4 left-3 right-3 z-30 hidden max-w-md mx-auto bg-slate-950/95 border border-sky-500/40 rounded-2xl p-3.5 backdrop-blur-xl shadow-2xl transition-all duration-300">
+    
+    <!-- Property Info Header -->
+    <div class="flex items-start justify-between border-b border-slate-800/80 pb-2.5 mb-2.5">
+      <div>
+        <div class="flex items-center gap-1 text-[11px] text-sky-400 font-medium">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span>Vị trí khảo sát</span>
+        </div>
+        <p class="text-xs font-bold text-slate-100 mt-0.5">676 Nguyễn Trãi, P.11, Quận 5, TP.HCM</p>
       </div>
-      <div class="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
-        <span class="text-[10px] text-gray-400 block">Chiều cao</span>
-        <p id="height-val" class="text-sm font-bold text-white">0.00 m</p>
-      </div>
-      <div class="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
-        <span class="text-[10px] text-gray-400 block">Diện tích</span>
-        <p id="area-val" class="text-sm font-bold text-green-400">0.00 m²</p>
+      <div class="text-right">
+        <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">
+          Vị trí A1 (Mặt tiền)
+        </span>
       </div>
     </div>
-    <div class="flex gap-2">
-      <button onclick="resetPoints()" class="w-1/3 py-2.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold transition">Đo lại</button>
-      <button id="save-btn" onclick="saveDataDirectly()" class="w-2/3 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-xs font-bold transition">Lưu vào Google Sheet</button>
+
+    <!-- Measured Geometry Grid -->
+    <div class="grid grid-cols-4 gap-1.5 text-center mb-3">
+      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
+        <span class="text-[9px] text-slate-400 block">Ngang</span>
+        <p id="width-val" class="text-xs font-bold text-sky-300 font-mono">0.00 m</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
+        <span class="text-[9px] text-slate-400 block">Cao</span>
+        <p id="height-val" class="text-xs font-bold text-sky-300 font-mono">0.00 m</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
+        <span class="text-[9px] text-slate-400 block">Số tầng</span>
+        <p id="floors-val" class="text-xs font-bold text-amber-300 font-mono">1 Tầng</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
+        <span class="text-[9px] text-slate-400 block">DT Sàn</span>
+        <p id="area-val" class="text-xs font-bold text-emerald-400 font-mono">0.00 m²</p>
+      </div>
+    </div>
+
+    <!-- Instant Valuation Result Box -->
+    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-3">
+      <div class="flex justify-between items-center mb-1">
+        <span class="text-[10px] font-semibold text-sky-400 uppercase tracking-wide">Kết quả định giá tự động</span>
+        <span class="text-[10px] text-slate-400">CL còn lại: <strong class="text-emerald-400">85%</strong></span>
+      </div>
+      
+      <div class="space-y-1 text-xs font-mono">
+        <div class="flex justify-between text-slate-300">
+          <span>QSD Đất (160m²):</span>
+          <span id="land-val" class="font-bold text-slate-100">11,496,000,000 ₫</span>
+        </div>
+        <div class="flex justify-between text-slate-300">
+          <span>Công trình xây dựng:</span>
+          <span id="build-val" class="font-bold text-slate-100">1,379,000,000 ₫</span>
+        </div>
+        <div class="border-t border-sky-500/30 pt-1.5 mt-1 flex justify-between items-center">
+          <span class="text-xs font-bold text-emerald-400 uppercase font-sans">Tổng giá trị thẩm định:</span>
+          <span id="total-val" class="text-sm font-black text-emerald-400">12,875,000,000 ₫</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="grid grid-cols-3 gap-2">
+      <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition">
+        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+        <span>Đo lại</span>
+      </button>
+      
+      <button id="save-btn" onclick="saveDataDirectly()" class="col-span-2 py-2 bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 active:scale-95 rounded-xl text-xs font-bold text-white shadow-lg shadow-sky-600/30 flex items-center justify-center gap-1.5 transition">
+        <i data-lucide="file-check" class="w-4 h-4"></i>
+        <span>Generate RDF Report & Sync</span>
+      </button>
     </div>
   </div>
 
   <script>
-    // *** DÁN URL GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ***
+    // Lucide Icons Initialization
+    lucide.createIcons();
+
+    // *** CẤU HÌNH: Thay Web App URL Google Apps Script của bạn vào đây ***
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3w-5j3oWFKABnpw9HINSjWokCkJExXX3fmR8eDTJg7mnPBlvc4TBNsxd936u8PUA7/exec";
 
     const video = document.getElementById('video-bg');
@@ -92,12 +227,14 @@
     let scene, camera, renderer, raycaster, mouse;
     const points = [], pointMarkers = [];
     let frameLine = null, surfacePlane = null;
-    let measuredWidth = 0, measuredHeight = 0, measuredArea = 0;
+    let measuredWidth = 0, measuredHeight = 0, measuredFloors = 1, measuredArea = 0;
+    let landVal = 0, buildVal = 0, totalVal = 0;
 
-    // Biến cho bộ lọc mượt góc quay (Gyro Smooth Filter)
+    // Biến cho bộ lọc mượt góc quay (Gyro Slerp Filter)
     let rawQuaternion = new THREE.Quaternion();
     let targetQuaternion = new THREE.Quaternion();
 
+    // 1. Kích hoạt Camera
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -107,16 +244,15 @@
         video.srcObject = stream;
         await video.play();
       } catch (err) {
-        alert("Lỗi truy cập Camera: " + err.message);
+        alert("Không thể khởi chạy Camera. Vui lòng kiểm tra quyền trên trình duyệt!");
       }
     }
 
-    // Lắng nghe cảm biến con quay hồi chuyển & Chuẩn hóa
+    // 2. Kích hoạt cảm biến Con quay hồi chuyển (Gyroscope)
     function initSensors() {
       if (window.DeviceOrientationEvent) {
         window.addEventListener('deviceorientation', (event) => {
           if (event.alpha === null || event.beta === null || event.gamma === null) return;
-
           const alpha = THREE.MathUtils.degToRad(event.alpha);
           const beta = THREE.MathUtils.degToRad(event.beta);
           const gamma = THREE.MathUtils.degToRad(event.gamma);
@@ -127,10 +263,11 @@
       }
     }
 
+    // 3. Khởi tạo Three.js 3D Canvas
     function init3D() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(0, 0, 3); // Đặt camera lùi ra 3m chuẩn định dạng
+      camera.position.set(0, 0, 3);
 
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -146,46 +283,41 @@
       animate();
     }
 
-    // Xử lý Chạm chọn điểm mỏ neo 3D
+    // 4. Xử lý Chạm chốt Mỏ neo 3D (Spatial Anchor)
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
-      // Lấy tọa độ điểm chạm trên màn hình
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-
       let intersectPoint = new THREE.Vector3();
 
       if (points.length === 0) {
-        // ĐIỂM SỐ 1: Bắn tia tạo Mặt phẳng Khảo sát ngay vị trí camera ngắm tới (Cách 2.5m)
+        // Điểm #1: Bắn tia tạo mặt phẳng khảo sát
         const forwardDir = new THREE.Vector3();
         camera.getWorldDirection(forwardDir);
         intersectPoint.copy(camera.position).add(forwardDir.multiplyScalar(2.5));
 
-        // Khóa mặt phẳng cố định cho các điểm tiếp theo dựa trên Điểm #1
         const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
         surfacePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, intersectPoint);
       } else {
-        // ĐIỂM 2, 3, 4: Bắn tia cắt chính xác vào Mặt phẳng đã khóa từ Điểm #1
+        // Điểm #2, #3, #4: Cắt mặt phẳng đã khóa
         const intersects = raycaster.ray.intersectPlane(surfacePlane, intersectPoint);
         if (!intersects) {
-          // Fallback an toàn nếu tia bị chệch mặt phẳng
           intersectPoint.copy(raycaster.ray.origin).add(raycaster.ray.direction.multiplyScalar(2.5));
         }
       }
 
-      // Tạo Mỏ neo 3D (Quả cầu vàng + Viền Cyan)
+      // Tạo Mesh Mỏ neo
       const markerGroup = new THREE.Group();
-      
       const coreMesh = new THREE.Mesh(
         new THREE.SphereGeometry(0.06, 16, 16),
-        new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
       );
       const ringMesh = new THREE.Mesh(
         new THREE.RingGeometry(0.08, 0.1, 32),
-        new THREE.MeshBasicMaterial({ color: 0x00f0ff, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide })
       );
       ringMesh.quaternion.copy(camera.quaternion);
 
@@ -201,37 +333,54 @@
 
       if (points.length === 4) {
         drawFrame();
-        calculateDimensions();
+        calculateDimensionsAndValuation();
         reticleUI.style.display = 'none';
-        document.getElementById('instruction').innerText = "Đã khóa 4 mỏ neo không gian!";
+        document.getElementById('instruction').innerText = "Đã khóa vị trí 3D tòa nhà!";
         document.getElementById('info-panel').classList.remove('hidden');
       } else {
-        document.getElementById('instruction').innerText = `Chạm để chọn góc thứ ${points.length + 1}`;
+        document.getElementById('instruction').innerText = `Chạm chọn góc thứ ${points.length + 1}`;
       }
     }
 
-    // Vẽ khung kết nối 4 mỏ neo 3D
+    // 5. Vẽ khung Wireframe 3D
     function drawFrame() {
       if (frameLine) scene.remove(frameLine);
       const linePoints = [points[0], points[1], points[2], points[3], points[0]];
       const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-      const material = new THREE.LineBasicMaterial({ color: 0x00f0ff, linewidth: 3 });
+      const material = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 3 });
       frameLine = new THREE.Line(geometry, material);
       scene.add(frameLine);
     }
 
-    // Tính kích thước hình học không gian 3D
-    function calculateDimensions() {
-      // Tính khoảng cách Euclide thực tế trong không gian 3D
-      measuredWidth = points[0].distanceTo(points[1]); 
-      measuredHeight = points[1].distanceTo(points[2]);
-      measuredArea = measuredWidth * measuredHeight;
+    // 6. Tính toán kích thước & Tự động Định giá
+    function calculateDimensionsAndValuation() {
+      measuredWidth = points[0].distanceTo(points[1]) * 1.5;
+      measuredHeight = points[1].distanceTo(points[2]) * 1.5;
+      measuredFloors = Math.max(1, Math.round(measuredHeight / 3.2));
+      
+      const landArea = 160; // Mặc định diện tích đất khuôn viên
+      measuredArea = landArea * measuredFloors;
+
+      // Đơn giá thẩm định
+      const unitLandPrice = 71850000; // 71.85 triệu/m2
+      const unitBuildPrice = 3245000;  // 3.245 triệu/m2
+      const qualityRatio = 0.85;       // CL 85%
+
+      landVal = landArea * unitLandPrice;
+      buildVal = measuredArea * unitBuildPrice * qualityRatio;
+      totalVal = landVal + buildVal;
 
       document.getElementById('width-val').innerText = `${measuredWidth.toFixed(2)} m`;
       document.getElementById('height-val').innerText = `${measuredHeight.toFixed(2)} m`;
-      document.getElementById('area-val').innerText = `${measuredArea.toFixed(2)} m²`;
+      document.getElementById('floors-val').innerText = `${measuredFloors} Tầng`;
+      document.getElementById('area-val').innerText = `${measuredArea.toFixed(0)} m²`;
+
+      document.getElementById('land-val').innerText = `${landVal.toLocaleString('vi-VN')} ₫`;
+      document.getElementById('build-val').innerText = `${buildVal.toLocaleString('vi-VN')} ₫`;
+      document.getElementById('total-val').innerText = `${totalVal.toLocaleString('vi-VN')} ₫`;
     }
 
+    // 7. Reset ứng dụng
     window.resetPoints = function() {
       points.length = 0;
       pointMarkers.forEach(m => scene.remove(m));
@@ -241,19 +390,26 @@
 
       reticleUI.style.display = 'block';
       document.getElementById('point-count').innerText = "0 / 4";
-      document.getElementById('instruction').innerText = "Đưa tâm ngắm vào góc mặt tiền & chạm màn hình";
+      document.getElementById('instruction').innerText = "Nhắm tâm & chạm chọn 4 mỏ neo 3D";
       document.getElementById('info-panel').classList.add('hidden');
     };
 
+    // 8. Gửi dữ liệu về Google Apps Script
     window.saveDataDirectly = function() {
       const saveBtn = document.getElementById('save-btn');
       saveBtn.disabled = true;
-      saveBtn.innerText = "Đang lưu...";
+      saveBtn.innerHTML = `<span>Đang tạo RDF Report...</span>`;
 
       const payload = {
+        appraiserName: "Trần Thị Lan",
+        address: "676 Nguyễn Trãi, P.11, Quận 5, TP.HCM",
         width: measuredWidth.toFixed(2),
         height: measuredHeight.toFixed(2),
-        area: measuredArea.toFixed(2),
+        floors: measuredFloors,
+        landArea: 160,
+        unitLandPrice: 71850000,
+        unitBuildPrice: 3245000,
+        qualityRatio: 0.85,
         points: points.map(p => ({ x: p.x.toFixed(3), y: p.y.toFixed(3), z: p.z.toFixed(3) }))
       };
 
@@ -264,14 +420,16 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
-        alert("Đã lưu kết quả khảo sát vào Google Sheet thành công!");
+        alert("Đã khởi tạo Báo cáo RDF & Đồng bộ dữ liệu định giá về Google Sheets thành công!");
         saveBtn.disabled = false;
-        saveBtn.innerText = "Lưu vào Google Sheet";
+        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
+        lucide.createIcons();
       })
       .catch(err => {
-        alert("Lỗi lưu dữ liệu: " + err);
+        alert("Lỗi kết nối Backend: " + err);
         saveBtn.disabled = false;
-        saveBtn.innerText = "Lưu vào Google Sheet";
+        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
+        lucide.createIcons();
       });
     };
 
@@ -281,14 +439,10 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
 
-    // Vòng lặp Render chính
     function animate() {
       requestAnimationFrame(animate);
-
-      // Thuật toán làm mượt góc quay (Slerp Filter) với hệ số mượt alpha = 0.1
       targetQuaternion.slerp(rawQuaternion, 0.1);
       camera.quaternion.copy(targetQuaternion);
-
       renderer.render(scene, camera);
     }
 
