@@ -3,36 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Survey Property</title>
+  <title>AR Khảo Sát Bất Động Sản</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & Thư viện AR Tracking Không Gian -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-    #video-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 1; }
-    #canvas-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; }
-  </style>
 </head>
-<body class="text-white font-sans select-none">
+<body class="bg-black text-white font-sans overflow-hidden select-none">
 
-  <video id="video-bg" autoplay playsinline muted></video>
-  <div id="canvas-container"></div>
+  <!-- Thẻ Video Camera -->
+  <video id="video-bg" autoplay playsinline muted class="fixed inset-0 w-full h-full object-cover z-0"></video>
+  
+  <!-- Canvas 3D -->
+  <div id="canvas-container" class="fixed inset-0 w-full h-full z-10"></div>
 
   <!-- HUD Header -->
-  <div class="fixed top-0 left-0 right-0 z-10 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+  <div class="fixed top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
     <div class="flex justify-between items-center max-w-md mx-auto">
       <div>
         <h1 class="text-base font-bold text-cyan-400 tracking-wider">AR PROPERTY SURVEY</h1>
-        <p id="instruction" class="text-xs text-gray-300">Chạm màn hình để chấm 4 góc mặt tiền</p>
+        <p id="instruction" class="text-xs text-gray-300">Quét camera & chạm 4 góc tòa nhà</p>
       </div>
       <div class="text-right">
-        <span class="text-[10px] text-gray-400 block uppercase">Mỏ neo 3D</span>
+        <span class="text-[10px] text-gray-400 block uppercase">Mỏ neo không gian</span>
         <div id="point-count" class="text-lg font-black text-amber-400">0 / 4</div>
       </div>
     </div>
   </div>
 
   <!-- Bảng kết quả -->
-  <div id="info-panel" class="fixed bottom-6 left-4 right-4 z-10 hidden bg-slate-900/90 border border-cyan-500/50 p-4 rounded-xl backdrop-blur-md max-w-md mx-auto shadow-2xl">
+  <div id="info-panel" class="fixed bottom-6 left-4 right-4 z-20 hidden bg-slate-900/90 border border-cyan-500/50 p-4 rounded-xl backdrop-blur-md max-w-md mx-auto shadow-2xl">
     <h3 class="text-xs font-bold text-cyan-400 uppercase mb-2 tracking-wide">Kích thước mặt tiền</h3>
     <div class="grid grid-cols-3 gap-2 text-center mb-3">
       <div class="bg-slate-800/80 p-2 rounded-lg border border-slate-700">
@@ -55,7 +54,7 @@
   </div>
 
   <script>
-    // *** CHÈN URL WEB APP GOOGLE APPS SCRIPT CỦA BẠN VÀO ĐÂY ***
+    // *** CẤU HÌNH: Dán đường dẫn Web App Google Apps Script của bạn vào đây ***
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3w-5j3oWFKABnpw9HINSjWokCkJExXX3fmR8eDTJg7mnPBlvc4TBNsxd936u8PUA7/exec";
 
     const video = document.getElementById('video-bg');
@@ -64,15 +63,30 @@
     const points = [], pointMarkers = [];
     let frameLine = null, measuredWidth = 0, measuredHeight = 0, measuredArea = 0;
 
+    // Quản lý biến định vị cảm biến không gian (Device Orientation)
+    let deviceOrientation = { alpha: 0, beta: 0, gamma: 0 };
+
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } }, audio: false
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
         });
         video.srcObject = stream;
         await video.play();
       } catch (err) {
         alert("Lỗi camera: " + err.message);
+      }
+    }
+
+    // Đăng ký nghe cảm biến con quay hồi chuyển (Gyroscope) của điện thoại
+    function initSensors() {
+      if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientation', (event) => {
+          deviceOrientation.alpha = event.alpha ? THREE.MathUtils.degToRad(event.alpha) : 0;
+          deviceOrientation.beta = event.beta ? THREE.MathUtils.degToRad(event.beta) : 0;
+          deviceOrientation.gamma = event.gamma ? THREE.MathUtils.degToRad(event.gamma) : 0;
+        });
       }
     }
 
@@ -91,21 +105,28 @@
 
       window.addEventListener('resize', onWindowResize);
       container.addEventListener('pointerdown', onPointerDown);
+
       animate();
     }
 
     function onPointerDown(event) {
       if (points.length >= 4) return;
+
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      
-      const targetZ = 0;
-      const distance = (targetZ - raycaster.ray.origin.z) / raycaster.ray.direction.z;
-      const pointPosition = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(distance));
 
+      raycaster.setFromCamera(mouse, camera);
+
+      // Tính vị trí mỏ neo 3D trong tọa độ thế giới thực (World Coordinates)
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const pointPosition = new THREE.Vector3();
+      raycaster.ray.intersectPlane(planeZ, pointPosition);
+
+      if (!pointPosition) return;
+
+      // Tạo Mỏ neo 3D
       const marker = new THREE.Mesh(
-        new THREE.SphereGeometry(0.12, 16, 16),
+        new THREE.SphereGeometry(0.08, 16, 16),
         new THREE.MeshBasicMaterial({ color: 0xf59e0b })
       );
       marker.position.copy(pointPosition);
@@ -113,12 +134,13 @@
 
       points.push(pointPosition);
       pointMarkers.push(marker);
+
       document.getElementById('point-count').innerText = `${points.length} / 4`;
 
       if (points.length === 4) {
         drawFrame();
         calculateDimensions();
-        document.getElementById('instruction').innerText = "Đã khóa 4 góc!";
+        document.getElementById('instruction').innerText = "Đã khóa 4 mỏ neo mặt tiền!";
         document.getElementById('info-panel').classList.remove('hidden');
       }
     }
@@ -132,8 +154,8 @@
     }
 
     function calculateDimensions() {
-      measuredWidth = points[0].distanceTo(points[1]) * 1.5; 
-      measuredHeight = points[1].distanceTo(points[2]) * 1.5;
+      measuredWidth = points[0].distanceTo(points[1]) * 1.2; 
+      measuredHeight = points[1].distanceTo(points[2]) * 1.2;
       measuredArea = measuredWidth * measuredHeight;
 
       document.getElementById('width-val').innerText = `${measuredWidth.toFixed(2)} m`;
@@ -146,6 +168,7 @@
       pointMarkers.forEach(m => scene.remove(m));
       pointMarkers.length = 0;
       if (frameLine) scene.remove(frameLine);
+
       document.getElementById('point-count').innerText = "0 / 4";
       document.getElementById('instruction').innerText = "Chạm màn hình để chấm 4 góc";
       document.getElementById('info-panel').classList.add('hidden');
@@ -189,10 +212,23 @@
 
     function animate() {
       requestAnimationFrame(animate);
+
+      // Cập nhật góc quay của Camera 3D theo chuyển động thực tế của điện thoại (Gyro Tracking)
+      if (camera) {
+        const euler = new THREE.Euler(
+          deviceOrientation.beta,
+          deviceOrientation.alpha,
+          -deviceOrientation.gamma,
+          'YXZ'
+        );
+        camera.quaternion.setFromEuler(euler);
+      }
+
       renderer.render(scene, camera);
     }
 
     startCamera();
+    initSensors();
     init3D();
   </script>
 </body>
