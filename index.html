@@ -23,7 +23,6 @@
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
-    /* Video Background */
     #video-bg {
       position: fixed;
       top: 0; left: 0;
@@ -32,7 +31,6 @@
       z-index: 1;
     }
 
-    /* 3D Canvas Layer */
     #canvas-container {
       position: fixed;
       top: 0; left: 0;
@@ -41,7 +39,6 @@
       pointer-events: auto;
     }
 
-    /* Sci-Fi Reticle Target */
     #reticle-ui {
       position: fixed;
       top: 50%; left: 50%;
@@ -49,20 +46,18 @@
       width: 40px; height: 40px;
       z-index: 15;
       pointer-events: none;
-      transition: all 0.2s ease;
-    }
-    #reticle-ui::before, #reticle-ui::after {
-      content: '';
-      position: absolute;
-      box-sizing: border-box;
     }
     #reticle-ui::before {
+      content: '';
+      position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
       border: 2px solid rgba(56, 189, 248, 0.6);
       border-radius: 50%;
       animation: pulse-ring 2s infinite;
     }
     #reticle-ui::after {
+      content: '';
+      position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       width: 6px; height: 6px;
@@ -75,6 +70,23 @@
       0% { transform: scale(0.9); opacity: 0.8; }
       50% { transform: scale(1.15); opacity: 0.4; }
       100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    /* Format các ô Input HUD */
+    .hud-input {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #f8fafc;
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-family: monospace;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .hud-input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
     }
   </style>
 </head>
@@ -92,7 +104,6 @@
   <!-- Top Navigation HUD Bar -->
   <header class="fixed top-0 left-0 right-0 z-20 p-3 bg-gradient-to-b from-slate-950/90 via-slate-950/50 to-transparent pointer-events-none">
     <div class="max-w-md mx-auto flex items-center justify-between">
-      <!-- App Brand -->
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-400/50 flex items-center justify-center backdrop-blur-md">
           <i data-lucide="box" class="w-5 h-5 text-sky-400"></i>
@@ -106,14 +117,13 @@
         </div>
       </div>
 
-      <!-- Appraiser Profile Card -->
       <div class="flex items-center gap-2 bg-slate-900/80 border border-slate-700/60 pl-2 pr-3 py-1 rounded-full backdrop-blur-md">
         <div class="w-6 h-6 rounded-full bg-sky-600/40 border border-sky-400/60 flex items-center justify-center text-[10px] font-bold text-sky-300">
           TL
         </div>
         <div class="text-right">
-          <p class="text-[10px] font-medium text-slate-300 leading-tight">Chuyên gia Thẩm định</p>
-          <p class="text-[11px] font-bold text-sky-400 leading-tight">Phạm Minh Tuấn</p>
+          <p class="text-[10px] font-medium text-slate-300 leading-tight">Thẩm định viên</p>
+          <p class="text-[11px] font-bold text-sky-400 leading-tight">Trần Thị Lan</p>
         </div>
       </div>
     </div>
@@ -131,75 +141,87 @@
       </div>
 
       <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
-        <span class="text-slate-400 uppercase tracking-wider text-[10px]">Điểm chọn:</span>
+        <span class="text-slate-400 uppercase tracking-wider text-[10px]">Mỏ neo:</span>
         <span id="point-count" class="font-mono font-bold text-amber-400 text-xs">0 / 4</span>
       </div>
     </div>
   </div>
 
-  <!-- Bottom Valuation Dashboard Panel -->
-  <div id="info-panel" class="fixed bottom-4 left-3 right-3 z-30 hidden max-w-md mx-auto bg-slate-950/95 border border-sky-500/40 rounded-2xl p-3.5 backdrop-blur-xl shadow-2xl transition-all duration-300">
+  <!-- Bottom Valuation Dashboard Panel (Bảng điều khiển tự nhập) -->
+  <div id="info-panel" class="fixed bottom-3 left-3 right-3 z-30 hidden max-w-md mx-auto bg-slate-950/95 border border-sky-500/40 rounded-2xl p-3 backdrop-blur-xl shadow-2xl transition-all duration-300 max-h-[85vh] overflow-y-auto">
     
-    <!-- Property Info Header -->
-    <div class="flex items-start justify-between border-b border-slate-800/80 pb-2.5 mb-2.5">
-      <div>
-        <div class="flex items-center gap-1 text-[11px] text-sky-400 font-medium">
+    <!-- 1. Vị trí & Địa chỉ + Nút GPS Định vị -->
+    <div class="border-b border-slate-800/80 pb-2 mb-2">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-1 text-[11px] text-sky-400 font-semibold uppercase tracking-wide">
           <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
           <span>Vị trí khảo sát</span>
         </div>
-        <p class="text-xs font-bold text-slate-100 mt-0.5">676 Nguyễn Trãi, P.11, Quận 5, TP.HCM</p>
+        <!-- Nút Định Vị GPS -->
+        <button onclick="getLocationGPS()" class="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 rounded text-[10px] text-sky-300 font-medium transition active:scale-95">
+          <i data-lucide="crosshair" class="w-3 h-3 text-sky-400"></i>
+          <span>Định vị GPS</span>
+        </button>
       </div>
-      <div class="text-right">
-        <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold">
-          Vị trí A1 (Mặt tiền)
-        </span>
+
+      <!-- Ô Tự Nhập Địa Chỉ -->
+      <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="676 Nguyễn Trãi, P.11, Quận 5, TP.HCM" placeholder="Nhập địa chỉ bất động sản...">
+      
+      <!-- Ô Tọa Độ GPS Lat, Long -->
+      <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
+        <span>Tọa độ:</span>
+        <input id="input-gps" type="text" class="hud-input text-[10px] py-0.5 text-amber-300 flex-1" value="10.753820, 106.663120" placeholder="Lat, Long">
       </div>
     </div>
 
-    <!-- Measured Geometry Grid -->
-    <div class="grid grid-cols-4 gap-1.5 text-center mb-3">
-      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
-        <span class="text-[9px] text-slate-400 block">Ngang</span>
-        <p id="width-val" class="text-xs font-bold text-sky-300 font-mono">0.00 m</p>
+    <!-- 2. Kích thước tự nhập (Ngang, Dài, Số tầng, DT Đất, DT Sàn) -->
+    <div class="grid grid-cols-5 gap-1 text-center mb-2">
+      <div>
+        <span class="text-[9px] text-slate-400 block mb-0.5">Ngang (m)</span>
+        <input id="input-width" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="5.00" oninput="recalculateValuation()">
       </div>
-      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
-        <span class="text-[9px] text-slate-400 block">Cao</span>
-        <p id="height-val" class="text-xs font-bold text-sky-300 font-mono">0.00 m</p>
+      <div>
+        <span class="text-[9px] text-slate-400 block mb-0.5">Dài (m)</span>
+        <input id="input-length" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="20.00" oninput="recalculateValuation()">
       </div>
-      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
-        <span class="text-[9px] text-slate-400 block">Số tầng</span>
-        <p id="floors-val" class="text-xs font-bold text-amber-300 font-mono">1 Tầng</p>
+      <div>
+        <span class="text-[9px] text-slate-400 block mb-0.5">Số tầng</span>
+        <input id="input-floors" type="number" step="1" class="hud-input w-full text-center text-amber-300 font-bold" value="3" oninput="recalculateValuation()">
       </div>
-      <div class="bg-slate-900/80 border border-slate-800 p-1.5 rounded-lg">
-        <span class="text-[9px] text-slate-400 block">DT Sàn</span>
-        <p id="area-val" class="text-xs font-bold text-emerald-400 font-mono">0.00 m²</p>
+      <div>
+        <span class="text-[9px] text-slate-400 block mb-0.5">DT Đất (m²)</span>
+        <input id="input-land-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="100.0" oninput="recalculateValuation()">
+      </div>
+      <div>
+        <span class="text-[9px] text-slate-400 block mb-0.5">DT Sàn (m²)</span>
+        <input id="input-build-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="300.0" oninput="recalculateValuation()">
       </div>
     </div>
 
-    <!-- Instant Valuation Result Box -->
-    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-3">
-      <div class="flex justify-between items-center mb-1">
-        <span class="text-[10px] font-semibold text-sky-400 uppercase tracking-wide">Kết quả định giá tự động</span>
-        <span class="text-[10px] text-slate-400">CL còn lại: <strong class="text-emerald-400">85%</strong></span>
+    <!-- 3. Bảng Kết Quả Định Giá Tự Động -->
+    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-2.5">
+      <div class="flex justify-between items-center mb-1 text-[10px]">
+        <span class="font-semibold text-sky-400 uppercase tracking-wide">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
+        <span class="text-slate-400">CL còn lại: <strong class="text-emerald-400">85%</strong></span>
       </div>
       
       <div class="space-y-1 text-xs font-mono">
         <div class="flex justify-between text-slate-300">
-          <span>QSD Đất (160m²):</span>
+          <span>QSD Đất:</span>
           <span id="land-val" class="font-bold text-slate-100">11,496,000,000 ₫</span>
         </div>
         <div class="flex justify-between text-slate-300">
           <span>Công trình xây dựng:</span>
-          <span id="build-val" class="font-bold text-slate-100">1,379,000,000 ₫</span>
+          <span id="build-val" class="font-bold text-slate-100">441,320,000 ₫</span>
         </div>
-        <div class="border-t border-sky-500/30 pt-1.5 mt-1 flex justify-between items-center">
-          <span class="text-xs font-bold text-emerald-400 uppercase font-sans">Tổng giá trị thẩm định:</span>
-          <span id="total-val" class="text-sm font-black text-emerald-400">12,875,000,000 ₫</span>
+        <div class="border-t border-sky-500/30 pt-1 mt-1 flex justify-between items-center">
+          <span class="text-xs font-bold text-emerald-400 uppercase font-sans">TỔNG GIÁ TRỊ THẨM ĐỊNH:</span>
+          <span id="total-val" class="text-sm font-black text-emerald-400">11,937,320,000 ₫</span>
         </div>
       </div>
     </div>
 
-    <!-- Action Buttons -->
+    <!-- 4. Nút bấm thao tác -->
     <div class="grid grid-cols-3 gap-2">
       <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -214,7 +236,6 @@
   </div>
 
   <script>
-    // Lucide Icons Initialization
     lucide.createIcons();
 
     // *** CẤU HÌNH: Thay Web App URL Google Apps Script của bạn vào đây ***
@@ -227,10 +248,7 @@
     let scene, camera, renderer, raycaster, mouse;
     const points = [], pointMarkers = [];
     let frameLine = null, surfacePlane = null;
-    let measuredWidth = 0, measuredHeight = 0, measuredFloors = 1, measuredArea = 0;
-    let landVal = 0, buildVal = 0, totalVal = 0;
 
-    // Biến cho bộ lọc mượt góc quay (Gyro Slerp Filter)
     let rawQuaternion = new THREE.Quaternion();
     let targetQuaternion = new THREE.Quaternion();
 
@@ -244,7 +262,7 @@
         video.srcObject = stream;
         await video.play();
       } catch (err) {
-        alert("Không thể khởi chạy Camera. Vui lòng kiểm tra quyền trên trình duyệt!");
+        alert("Không thể mở Camera. Vui lòng kiểm tra quyền trên trình duyệt!");
       }
     }
 
@@ -283,7 +301,27 @@
       animate();
     }
 
-    // 4. Xử lý Chạm chốt Mỏ neo 3D (Spatial Anchor)
+    // 4. Lấy Tọa Độ GPS Hiện Tại
+    window.getLocationGPS = function() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude.toFixed(6);
+            const lng = position.coords.longitude.toFixed(6);
+            document.getElementById('input-gps').value = `${lat}, ${lng}`;
+            alert(`Đã cập nhật tọa độ GPS: ${lat}, ${lng}`);
+          },
+          (error) => {
+            alert("Lỗi lấy tọa độ GPS: " + error.message);
+          },
+          { enableHighAccuracy: true }
+        );
+      } else {
+        alert("Trình duyệt không hỗ trợ Geolocation GPS!");
+      }
+    };
+
+    // 5. Xử lý Chạm chốt Mỏ neo 3D (Spatial Anchor)
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
@@ -294,7 +332,6 @@
       let intersectPoint = new THREE.Vector3();
 
       if (points.length === 0) {
-        // Điểm #1: Bắn tia tạo mặt phẳng khảo sát
         const forwardDir = new THREE.Vector3();
         camera.getWorldDirection(forwardDir);
         intersectPoint.copy(camera.position).add(forwardDir.multiplyScalar(2.5));
@@ -302,14 +339,12 @@
         const planeNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(camera.quaternion);
         surfacePlane = new THREE.Plane().setFromNormalAndCoplanarPoint(planeNormal, intersectPoint);
       } else {
-        // Điểm #2, #3, #4: Cắt mặt phẳng đã khóa
         const intersects = raycaster.ray.intersectPlane(surfacePlane, intersectPoint);
         if (!intersects) {
           intersectPoint.copy(raycaster.ray.origin).add(raycaster.ray.direction.multiplyScalar(2.5));
         }
       }
 
-      // Tạo Mesh Mỏ neo
       const markerGroup = new THREE.Group();
       const coreMesh = new THREE.Mesh(
         new THREE.SphereGeometry(0.06, 16, 16),
@@ -333,7 +368,18 @@
 
       if (points.length === 4) {
         drawFrame();
-        calculateDimensionsAndValuation();
+        
+        // Tự động điền kích thước vừa đo AR vào các ô Input
+        const w = points[0].distanceTo(points[1]) * 1.5;
+        const h = points[1].distanceTo(points[2]) * 1.5;
+        const floors = Math.max(1, Math.round(h / 3.2));
+        
+        document.getElementById('input-width').value = w.toFixed(2);
+        document.getElementById('input-length').value = (w * 3.5).toFixed(2); // Giả định chiều sâu
+        document.getElementById('input-floors').value = floors;
+        
+        recalculateValuation(); // Tính toán định giá lại
+
         reticleUI.style.display = 'none';
         document.getElementById('instruction').innerText = "Đã khóa vị trí 3D tòa nhà!";
         document.getElementById('info-panel').classList.remove('hidden');
@@ -342,7 +388,6 @@
       }
     }
 
-    // 5. Vẽ khung Wireframe 3D
     function drawFrame() {
       if (frameLine) scene.remove(frameLine);
       const linePoints = [points[0], points[1], points[2], points[3], points[0]];
@@ -352,35 +397,39 @@
       scene.add(frameLine);
     }
 
-    // 6. Tính toán kích thước & Tự động Định giá
-    function calculateDimensionsAndValuation() {
-      measuredWidth = points[0].distanceTo(points[1]) * 1.5;
-      measuredHeight = points[1].distanceTo(points[2]) * 1.5;
-      measuredFloors = Math.max(1, Math.round(measuredHeight / 3.2));
-      
-      const landArea = 160; // Mặc định diện tích đất khuôn viên
-      measuredArea = landArea * measuredFloors;
+    // 6. Tính Toán Định Giá Động Theo Ô Tự Nhập
+    window.recalculateValuation = function() {
+      const width = parseFloat(document.getElementById('input-width').value) || 0;
+      const length = parseFloat(document.getElementById('input-length').value) || 0;
+      const floors = parseInt(document.getElementById('input-floors').value) || 1;
 
-      // Đơn giá thẩm định
-      const unitLandPrice = 71850000; // 71.85 triệu/m2
-      const unitBuildPrice = 3245000;  // 3.245 triệu/m2
-      const qualityRatio = 0.85;       // CL 85%
+      // Tính tự động diện tích nếu chưa nhập thủ công
+      let landArea = parseFloat(document.getElementById('input-land-area').value);
+      if (!landArea || landArea === 0) {
+        landArea = width * length;
+        document.getElementById('input-land-area').value = landArea.toFixed(1);
+      }
 
-      landVal = landArea * unitLandPrice;
-      buildVal = measuredArea * unitBuildPrice * qualityRatio;
-      totalVal = landVal + buildVal;
+      let buildArea = parseFloat(document.getElementById('input-build-area').value);
+      if (!buildArea || buildArea === 0) {
+        buildArea = landArea * floors;
+        document.getElementById('input-build-area').value = buildArea.toFixed(1);
+      }
 
-      document.getElementById('width-val').innerText = `${measuredWidth.toFixed(2)} m`;
-      document.getElementById('height-val').innerText = `${measuredHeight.toFixed(2)} m`;
-      document.getElementById('floors-val').innerText = `${measuredFloors} Tầng`;
-      document.getElementById('area-val').innerText = `${measuredArea.toFixed(0)} m²`;
+      // Đơn giá tham chiếu
+      const unitLandPrice = 114960000; // 114.96 triệu/m2
+      const unitBuildPrice = 1730000;   // Đơn giá XD
+      const qualityRatio = 0.85;        // CL 85%
 
-      document.getElementById('land-val').innerText = `${landVal.toLocaleString('vi-VN')} ₫`;
-      document.getElementById('build-val').innerText = `${buildVal.toLocaleString('vi-VN')} ₫`;
-      document.getElementById('total-val').innerText = `${totalVal.toLocaleString('vi-VN')} ₫`;
-    }
+      const landVal = landArea * unitLandPrice;
+      const buildVal = buildArea * unitBuildPrice * qualityRatio;
+      const totalVal = landVal + buildVal;
 
-    // 7. Reset ứng dụng
+      document.getElementById('land-val').innerText = `${Math.round(landVal).toLocaleString('vi-VN')} ₫`;
+      document.getElementById('build-val').innerText = `${Math.round(buildVal).toLocaleString('vi-VN')} ₫`;
+      document.getElementById('total-val').innerText = `${Math.round(totalVal).toLocaleString('vi-VN')} ₫`;
+    };
+
     window.resetPoints = function() {
       points.length = 0;
       pointMarkers.forEach(m => scene.remove(m));
@@ -394,22 +443,21 @@
       document.getElementById('info-panel').classList.add('hidden');
     };
 
-    // 8. Gửi dữ liệu về Google Apps Script
+    // 7. Gửi Dữ Liệu Tự Nhập + Định Vị về Google Apps Script
     window.saveDataDirectly = function() {
       const saveBtn = document.getElementById('save-btn');
       saveBtn.disabled = true;
-      saveBtn.innerHTML = `<span>Đang tạo RDF Report...</span>`;
+      saveBtn.innerHTML = `<span>Đang gửi dữ liệu...</span>`;
 
       const payload = {
         appraiserName: "Trần Thị Lan",
-        address: "676 Nguyễn Trãi, P.11, Quận 5, TP.HCM",
-        width: measuredWidth.toFixed(2),
-        height: measuredHeight.toFixed(2),
-        floors: measuredFloors,
-        landArea: 160,
-        unitLandPrice: 71850000,
-        unitBuildPrice: 3245000,
-        qualityRatio: 0.85,
+        address: document.getElementById('input-address').value,
+        gps: document.getElementById('input-gps').value,
+        width: document.getElementById('input-width').value,
+        length: document.getElementById('input-length').value,
+        floors: document.getElementById('input-floors').value,
+        landArea: document.getElementById('input-land-area').value,
+        buildArea: document.getElementById('input-build-area').value,
         points: points.map(p => ({ x: p.x.toFixed(3), y: p.y.toFixed(3), z: p.z.toFixed(3) }))
       };
 
@@ -420,13 +468,13 @@
         body: JSON.stringify(payload)
       })
       .then(() => {
-        alert("Đã khởi tạo Báo cáo RDF & Đồng bộ dữ liệu định giá về Google Sheets thành công!");
+        alert("Đã đồng bộ dữ liệu khảo sát & Tọa độ GPS vào Google Sheets thành công!");
         saveBtn.disabled = false;
         saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
         lucide.createIcons();
       })
       .catch(err => {
-        alert("Lỗi kết nối Backend: " + err);
+        alert("Lỗi gửi dữ liệu: " + err);
         saveBtn.disabled = false;
         saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
         lucide.createIcons();
