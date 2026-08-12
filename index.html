@@ -23,7 +23,6 @@
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
-    /* Video Background */
     #video-bg {
       position: fixed;
       top: 0; left: 0;
@@ -32,7 +31,6 @@
       z-index: 1;
     }
 
-    /* Canvas đóng băng ảnh nền */
     #freeze-canvas {
       position: fixed;
       top: 0; left: 0;
@@ -41,7 +39,6 @@
       z-index: 1;
     }
 
-    /* Three.js 3D Canvas Layer */
     #canvas-container {
       position: fixed;
       top: 0; left: 0;
@@ -50,12 +47,11 @@
       pointer-events: auto;
     }
 
-    /* HUD Reticle Target */
     #reticle-ui {
       position: fixed;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 40px; height: 40px;
+      width: 32px; height: 32px;
       z-index: 15;
       pointer-events: none;
     }
@@ -72,10 +68,10 @@
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      width: 6px; height: 6px;
+      width: 4px; height: 4px;
       background: #38bdf8;
       border-radius: 50%;
-      box-shadow: 0 0 10px #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
     }
 
     @keyframes pulse-ring {
@@ -84,7 +80,6 @@
       100% { transform: scale(0.9); opacity: 0.8; }
     }
 
-    /* Format các ô Input HUD */
     .hud-input {
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(56, 189, 248, 0.3);
@@ -128,7 +123,7 @@
             <span class="text-sm font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">SmartVal</span>
             <span class="text-xs px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded font-semibold">Pro</span>
           </div>
-          <p id="instruction" class="text-[11px] text-slate-300">Chạm màn hình chọn 4 góc mặt tiền</p>
+          <p id="instruction" class="text-[11px] text-slate-300">Chạm màn hình chọn 4 mỏ neo</p>
         </div>
       </div>
 
@@ -144,7 +139,7 @@
     </div>
   </header>
 
-  <!-- Live Status & Anchor Indicator HUD -->
+  <!-- Live Status & Realtime Clock HUD -->
   <div class="fixed top-16 left-0 right-0 z-20 px-3 pointer-events-none">
     <div class="max-w-md mx-auto flex justify-between items-center text-[11px]">
       <div class="flex items-center gap-2 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
@@ -155,6 +150,12 @@
         <span id="status-text" class="text-slate-300 font-mono">CAMERA LIVE</span>
       </div>
 
+      <!-- Đồng Hồ Ngày Giờ Realtime -->
+      <div class="flex items-center gap-1.5 bg-slate-950/80 border border-sky-500/30 px-2.5 py-1 rounded-md backdrop-blur-md text-sky-300 font-mono text-[10px]">
+        <i data-lucide="clock" class="w-3 h-3 text-sky-400"></i>
+        <span id="realtime-clock">--/--/---- --:--:--</span>
+      </div>
+
       <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
         <span class="text-slate-400 uppercase tracking-wider text-[10px]">Mỏ neo:</span>
         <span id="point-count" class="font-mono font-bold text-amber-400 text-xs">0 / 4</span>
@@ -162,20 +163,35 @@
     </div>
   </div>
 
-  <!-- Bottom Valuation Dashboard Panel (Bảng điều khiển tự nhập) -->
+  <!-- Nút Nổi Xem Trọn Vẹn Ảnh (Mắt thần) & Chụp Màn Hình -->
+  <div id="floating-actions" class="fixed top-28 right-3 z-30 hidden flex-col gap-2">
+    <button onclick="toggleInfoPanel()" class="p-2.5 bg-slate-900/90 border border-sky-500/50 hover:bg-slate-800 rounded-full text-sky-400 shadow-lg backdrop-blur-md transition active:scale-95">
+      <i id="toggle-icon" data-lucide="eye-off" class="w-5 h-5"></i>
+    </button>
+    <button onclick="takeScreenshot()" class="p-2.5 bg-emerald-600/90 border border-emerald-400/50 hover:bg-emerald-500 rounded-full text-white shadow-lg backdrop-blur-md transition active:scale-95">
+      <i data-lucide="camera" class="w-5 h-5"></i>
+    </button>
+  </div>
+
+  <!-- Bottom Valuation Dashboard Panel (Có thể thu gọn để xem ảnh trọn vẹn) -->
   <div id="info-panel" class="fixed bottom-3 left-3 right-3 z-30 hidden max-w-md mx-auto bg-slate-950/95 border border-sky-500/40 rounded-2xl p-3 backdrop-blur-xl shadow-2xl transition-all duration-300 max-h-[85vh] overflow-y-auto">
     
-    <!-- 1. Vị trí & Địa chỉ + Nút GPS Định vị -->
+    <!-- Header Bảng thông số & Nút thu gọn -->
     <div class="border-b border-slate-800/80 pb-2 mb-2">
       <div class="flex items-center justify-between mb-1">
         <div class="flex items-center gap-1 text-[11px] text-sky-400 font-semibold uppercase tracking-wide">
           <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
           <span>Vị trí khảo sát</span>
         </div>
-        <button onclick="getLocationGPS()" class="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 rounded text-[10px] text-sky-300 font-medium transition active:scale-95">
-          <i data-lucide="crosshair" class="w-3 h-3 text-sky-400"></i>
-          <span>Định vị GPS</span>
-        </button>
+        <div class="flex items-center gap-1">
+          <button onclick="getLocationGPS()" class="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 rounded text-[10px] text-sky-300 font-medium transition active:scale-95">
+            <i data-lucide="crosshair" class="w-3 h-3 text-sky-400"></i>
+            <span>GPS</span>
+          </button>
+          <button onclick="toggleInfoPanel()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-[10px] text-slate-300 font-medium transition">
+            Thu gọn
+          </button>
+        </div>
       </div>
 
       <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="" placeholder="Nhập địa chỉ bất động sản...">
@@ -186,7 +202,7 @@
       </div>
     </div>
 
-    <!-- 2. Kích thước tự nhập -->
+    <!-- Kích thước tự nhập -->
     <div class="grid grid-cols-5 gap-1 text-center mb-2">
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">Ngang (m)</span>
@@ -210,7 +226,7 @@
       </div>
     </div>
 
-    <!-- 3. Bảng Kết Quả Định Giá Tự Động -->
+    <!-- Bảng Kết Quả Định Giá Tự Động -->
     <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-2.5">
       <div class="flex justify-between items-center mb-1 text-[10px]">
         <span class="font-semibold text-sky-400 uppercase tracking-wide">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
@@ -233,16 +249,21 @@
       </div>
     </div>
 
-    <!-- 4. Nút bấm thao tác -->
-    <div class="grid grid-cols-3 gap-2">
+    <!-- Nút bấm thao tác -->
+    <div class="grid grid-cols-4 gap-1.5">
       <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-xs font-bold text-slate-300 flex items-center justify-center gap-1 transition">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         <span>Đo lại</span>
       </button>
+
+      <button onclick="takeScreenshot()" class="py-2 bg-emerald-700 hover:bg-emerald-600 active:scale-95 border border-emerald-600 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-1 transition">
+        <i data-lucide="camera" class="w-3.5 h-3.5"></i>
+        <span>Chụp ảnh</span>
+      </button>
       
-      <button id="save-btn" onclick="saveDataDirectly()" class="col-span-2 py-2 bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 active:scale-95 rounded-xl text-xs font-bold text-white shadow-lg shadow-sky-600/30 flex items-center justify-center gap-1.5 transition">
+      <button id="save-btn" onclick="saveDataDirectly()" class="col-span-2 py-2 bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 active:scale-95 rounded-xl text-xs font-bold text-white shadow-lg shadow-sky-600/30 flex items-center justify-center gap-1 transition">
         <i data-lucide="file-check" class="w-4 h-4"></i>
-        <span>Generate RDF Report & Sync</span>
+        <span>Sync & Report</span>
       </button>
     </div>
   </div>
@@ -256,12 +277,25 @@
     const freezeCanvas = document.getElementById('freeze-canvas');
     const container = document.getElementById('canvas-container');
     const reticleUI = document.getElementById('reticle-ui');
+    const infoPanel = document.getElementById('info-panel');
+    const floatingActions = document.getElementById('floating-actions');
 
     let scene, camera, renderer, raycaster, mouse;
     const points = [], pointMarkers = [];
     let frameLine = null;
+    let isPanelCollapsed = false;
 
-    // 1. Kích hoạt Camera Live
+    // 1. Cập nhật Đồng hồ Realtime
+    function updateClock() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+      document.getElementById('realtime-clock').innerText = `${dateStr} ${timeStr}`;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // 2. Kích hoạt Camera
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -275,13 +309,13 @@
       }
     }
 
-    // 2. Khởi tạo Three.js 3D Canvas chuẩn
+    // 3. Khởi tạo Three.js Canvas
     function init3D() {
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(0, 0, 5); // Góc nhìn camera chuẩn cố định
+      camera.position.set(0, 0, 5);
 
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       container.appendChild(renderer.domElement);
@@ -295,7 +329,7 @@
       animate();
     }
 
-    // Lấy GPS
+    // 4. Lấy GPS
     window.getLocationGPS = function() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -315,7 +349,7 @@
       }
     };
 
-    // 3. Hàm Đóng Băng Khung Hình Camera
+    // 5. Đóng Băng Khung Hình Camera
     function freezeCameraView() {
       const ctx = freezeCanvas.getContext('2d');
       freezeCanvas.width = video.videoWidth || window.innerWidth;
@@ -325,13 +359,12 @@
       video.classList.add('hidden');
       freezeCanvas.classList.remove('hidden');
 
-      // Cập nhật trạng thái HUD
       document.getElementById('status-ping').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
       document.getElementById('status-dot').className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
-      document.getElementById('status-text').innerText = "FROZEN FRAME (STATIC)";
+      document.getElementById('status-text').innerText = "FROZEN FRAME";
     }
 
-    // 4. Xử lý Chạm chọn điểm Mỏ neo (Cách đo ban đầu)
+    // 6. Xử lý Chạm Chọn Điểm (Đã thu nhỏ điểm mỏ neo)
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
@@ -340,19 +373,18 @@
 
       raycaster.setFromCamera(mouse, camera);
       
-      // Tính vị trí cắt trên mặt phẳng 3D cố định z = 0
       const targetZ = 0;
       const distance = (targetZ - raycaster.ray.origin.z) / raycaster.ray.direction.z;
       const pointPosition = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(distance));
 
-      // Tạo Mỏ neo 3D cố định
+      // Mỏ neo nhỏ nhắn chuẩn xác (Kích thước thu nhỏ 0.04)
       const markerGroup = new THREE.Group();
       const coreMesh = new THREE.Mesh(
-        new THREE.SphereGeometry(0.1, 16, 16),
+        new THREE.SphereGeometry(0.04, 16, 16),
         new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
       );
       const ringMesh = new THREE.Mesh(
-        new THREE.RingGeometry(0.12, 0.15, 32),
+        new THREE.RingGeometry(0.05, 0.07, 32),
         new THREE.MeshBasicMaterial({ color: 0x34d399, side: THREE.DoubleSide })
       );
 
@@ -368,9 +400,8 @@
 
       if (points.length === 4) {
         drawFrame();
-        freezeCameraView(); // ĐÓNG BẰNG MÀN HÌNH NGAY KHI ĐỦ 4 ĐIỂM
+        freezeCameraView();
         
-        // Tự động điền kích thước vừa đo vào các ô Input
         const w = points[0].distanceTo(points[1]) * 1.5;
         const h = points[1].distanceTo(points[2]) * 1.5;
         const floors = Math.max(1, Math.round(h / 3.2));
@@ -382,14 +413,15 @@
         recalculateValuation();
 
         reticleUI.style.display = 'none';
-        document.getElementById('instruction').innerText = "Đã chốt & đóng băng khung hình hiện trường!";
-        document.getElementById('info-panel').classList.remove('hidden');
+        document.getElementById('instruction').innerText = "Khảo sát hoàn tất";
+        infoPanel.classList.remove('hidden');
+        floatingActions.classList.remove('hidden');
+        floatingActions.classList.add('flex');
       } else {
         document.getElementById('instruction').innerText = `Chạm chọn góc thứ ${points.length + 1}`;
       }
     }
 
-    // 5. Vẽ khung Wireframe cố định
     function drawFrame() {
       if (frameLine) scene.remove(frameLine);
       const linePoints = [points[0], points[1], points[2], points[3], points[0]];
@@ -399,7 +431,48 @@
       scene.add(frameLine);
     }
 
-    // 6. Tính Toán Định Giá Tự Động
+    // 7. Bật / Tắt Xem Trọn Vẹn Ảnh
+    window.toggleInfoPanel = function() {
+      isPanelCollapsed = !isPanelCollapsed;
+      const toggleIcon = document.getElementById('toggle-icon');
+
+      if (isPanelCollapsed) {
+        infoPanel.classList.add('hidden');
+        toggleIcon.setAttribute('data-lucide', 'eye');
+      } else {
+        infoPanel.classList.remove('hidden');
+        toggleIcon.setAttribute('data-lucide', 'eye-off');
+      }
+      lucide.createIcons();
+    };
+
+    // 8. Chụp Ảnh Màn Hình Tải Về Máy
+    window.takeScreenshot = function() {
+      const tempCanvas = document.createElement('canvas');
+      const w = freezeCanvas.width || window.innerWidth;
+      const h = freezeCanvas.height || window.innerHeight;
+      tempCanvas.width = w;
+      tempCanvas.height = h;
+
+      const ctx = tempCanvas.getContext('2d');
+
+      // Vẽ ảnh nền
+      if (!freezeCanvas.classList.contains('hidden')) {
+        ctx.drawImage(freezeCanvas, 0, 0, w, h);
+      } else {
+        ctx.drawImage(video, 0, 0, w, h);
+      }
+
+      // Đè khung 3D mỏ neo
+      ctx.drawImage(renderer.domElement, 0, 0, w, h);
+
+      // Tự động tải file PNG
+      const link = document.createElement('a');
+      link.download = `SmartVal_Survey_${Date.now()}.png`;
+      link.href = tempCanvas.toDataURL('image/png');
+      link.click();
+    };
+
     window.recalculateValuation = function() {
       const width = parseFloat(document.getElementById('input-width').value) || 0;
       const length = parseFloat(document.getElementById('input-length').value) || 0;
@@ -430,14 +503,12 @@
       document.getElementById('total-val').innerText = `${Math.round(totalVal).toLocaleString('vi-VN')} ₫`;
     };
 
-    // 7. Reset ứng dụng về trạng thái ban đầu
     window.resetPoints = function() {
       points.length = 0;
       pointMarkers.forEach(m => scene.remove(m));
       pointMarkers.length = 0;
       if (frameLine) scene.remove(frameLine);
 
-      // Bỏ đóng băng camera
       freezeCanvas.classList.add('hidden');
       video.classList.remove('hidden');
 
@@ -447,15 +518,16 @@
 
       reticleUI.style.display = 'block';
       document.getElementById('point-count').innerText = "0 / 4";
-      document.getElementById('instruction').innerText = "Chạm màn hình chọn 4 góc mặt tiền";
-      document.getElementById('info-panel').classList.add('hidden');
+      document.getElementById('instruction').innerText = "Chạm màn hình chọn 4 mỏ neo";
+      infoPanel.classList.add('hidden');
+      floatingActions.classList.add('hidden');
+      floatingActions.classList.remove('flex');
     };
 
-    // 8. Đồng bộ dữ liệu về Google Sheets
     window.saveDataDirectly = function() {
       const saveBtn = document.getElementById('save-btn');
       saveBtn.disabled = true;
-      saveBtn.innerHTML = `<span>Đang gửi dữ liệu...</span>`;
+      saveBtn.innerHTML = `<span>Đang gửi...</span>`;
 
       const payload = {
         appraiserName: "Phạm Minh Tuấn",
@@ -478,13 +550,13 @@
       .then(() => {
         alert("Đã đồng bộ dữ liệu khảo sát & Tọa độ GPS vào Google Sheets thành công!");
         saveBtn.disabled = false;
-        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
+        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Sync & Report</span>`;
         lucide.createIcons();
       })
       .catch(err => {
         alert("Lỗi gửi dữ liệu: " + err);
         saveBtn.disabled = false;
-        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Generate RDF Report & Sync</span>`;
+        saveBtn.innerHTML = `<i data-lucide="file-check" class="w-4 h-4"></i><span>Sync & Report</span>`;
         lucide.createIcons();
       });
     };
