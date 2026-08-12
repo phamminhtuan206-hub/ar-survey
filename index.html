@@ -113,7 +113,7 @@
             <span class="text-sm font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-emerald-400">SmartVal</span>
             <span class="text-xs px-1.5 py-0.2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded font-semibold">Pro</span>
           </div>
-          <p id="instruction" class="text-[11px] text-slate-300">Nhắm tâm & chạm chọn 4 mỏ neo 3D</p>
+          <p id="instruction" class="text-[11px] text-slate-300">Nhắm tâm & chạm chọn 4 điểm 3D</p>
         </div>
       </div>
 
@@ -122,8 +122,8 @@
           TL
         </div>
         <div class="text-right">
-          <p class="text-[10px] font-medium text-slate-300 leading-tight">Thẩm định viên</p>
-          <p class="text-[11px] font-bold text-sky-400 leading-tight">Trần Thị Lan</p>
+          <p class="text-[10px] font-medium text-slate-300 leading-tight">Chuyên gia thẩm định</p>
+          <p class="text-[11px] font-bold text-sky-400 leading-tight">Phạm Minh Tuấn</p>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@
       </div>
 
       <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2.5 py-1 rounded-md backdrop-blur-md">
-        <span class="text-slate-400 uppercase tracking-wider text-[10px]">Mỏ neo:</span>
+        <span class="text-slate-400 uppercase tracking-wider text-[10px]">Điểm chọn:</span>
         <span id="point-count" class="font-mono font-bold text-amber-400 text-xs">0 / 4</span>
       </div>
     </div>
@@ -165,7 +165,7 @@
       </div>
 
       <!-- Ô Tự Nhập Địa Chỉ -->
-      <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="676 Nguyễn Trãi, P.11, Quận 5, TP.HCM" placeholder="Nhập địa chỉ bất động sản...">
+      <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="" placeholder="Nhập địa chỉ bất động sản...">
       
       <!-- Ô Tọa Độ GPS Lat, Long -->
       <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
@@ -178,23 +178,23 @@
     <div class="grid grid-cols-5 gap-1 text-center mb-2">
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">Ngang (m)</span>
-        <input id="input-width" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="5.00" oninput="recalculateValuation()">
+        <input id="input-width" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
       </div>
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">Dài (m)</span>
-        <input id="input-length" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="20.00" oninput="recalculateValuation()">
+        <input id="input-length" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
       </div>
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">Số tầng</span>
-        <input id="input-floors" type="number" step="1" class="hud-input w-full text-center text-amber-300 font-bold" value="3" oninput="recalculateValuation()">
+        <input id="input-floors" type="number" step="1" class="hud-input w-full text-center text-amber-300 font-bold" value="" oninput="recalculateValuation()">
       </div>
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">DT Đất (m²)</span>
-        <input id="input-land-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="100.0" oninput="recalculateValuation()">
+        <input id="input-land-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
       </div>
       <div>
         <span class="text-[9px] text-slate-400 block mb-0.5">DT Sàn (m²)</span>
-        <input id="input-build-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="300.0" oninput="recalculateValuation()">
+        <input id="input-build-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
       </div>
     </div>
 
