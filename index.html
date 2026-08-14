@@ -97,6 +97,7 @@
       100% { transform: scale(0.9); opacity: 0.8; }
     }
 
+    /* Style cho ô Input */
     .hud-input {
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(56, 189, 248, 0.3);
@@ -112,6 +113,22 @@
       border-color: #38bdf8;
       box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
     }
+
+    /* ANIMATION PHÁT SÁNG NỔI BẬT KHI CHẠM NÚT (GLOW CLICK) */
+    .btn-action-glow {
+      background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+      border: 1px solid rgba(52, 211, 153, 0.5);
+      color: #ffffff;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-action-glow:active {
+      transform: scale(0.94);
+      box-shadow: 0 0 20px rgba(52, 211, 153, 0.9), 0 0 30px rgba(16, 185, 129, 0.6);
+      filter: brightness(1.25);
+    }
   </style>
 </head>
 <body class="text-slate-100 select-none">
@@ -123,8 +140,8 @@
     <div id="canvas-container"></div>
     <div id="reticle-ui"></div>
 
-    <!-- BẢN ĐỒ NHỎ OSM ĐỊNH VỊ GÓC DƯỚI BÊN PHẢI -->
-    <div id="osm-mini-map"></div>
+    <!-- BẢN ĐỒ NHỎ OSM ĐỊNH VỊ GÓC DƯỚI BÊN PHẢI (Ẩn khi đang chấm điểm) -->
+    <div id="osm-mini-map" class="hidden"></div>
 
     <!-- Header HUD -->
     <header class="absolute top-0 left-0 right-0 z-20 p-2.5 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent pointer-events-none">
@@ -235,15 +252,16 @@
       </div>
     </div>
 
-    <!-- Bảng Kết Quả Định Giá Tự Động & Mã QR Code To Rõ Dễ Quét -->
-    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2 mb-2 flex justify-between items-center">
-      <div class="flex-1 pr-2">
-        <div class="flex justify-between items-center mb-1 text-[10px]">
-          <span class="font-semibold text-sky-400 uppercase tracking-wide">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
-          <span class="text-slate-400">CL: <strong class="text-emerald-400">85%</strong></span>
-        </div>
-        
-        <div class="space-y-0.5 text-xs font-mono">
+    <!-- BẢNG ĐỊNH GIÁ: ĐÃ ĐƯA "KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG" LÊN LÀM TIÊU ĐỀ LỚN -->
+    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-2">
+      <!-- TIÊU ĐỀ LỚN LÊN CAO -->
+      <div class="flex justify-between items-center mb-2 border-b border-sky-500/20 pb-1">
+        <span class="text-[11px] font-extrabold text-sky-400 uppercase tracking-wider font-sans">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
+        <span class="text-[10px] text-slate-400 font-mono">CL: <strong class="text-emerald-400 font-bold">85%</strong></span>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <div class="flex-1 pr-2 space-y-1 text-xs font-mono">
           <div class="flex justify-between text-slate-300">
             <span>QSD Đất:</span>
             <span id="land-val" class="font-bold text-slate-100">0 ₫</span>
@@ -257,36 +275,38 @@
             <span id="total-val" class="text-xs font-black text-emerald-400">0 ₫</span>
           </div>
         </div>
-      </div>
 
-      <!-- Khung hiển thị Mã QR CODE ĐƯỢC PHÓNG TO (120x120px) DỄ QUÉT -->
-      <div class="flex flex-col items-center justify-center pl-2 border-l border-slate-800">
-        <div class="bg-white p-1.5 rounded-lg shadow-lg border border-sky-400 flex items-center justify-center">
-          <canvas id="qr-canvas" class="w-28 h-28 block"></canvas>
+        <!-- Mã QR Code To Rõ Dễ Quét -->
+        <div class="flex flex-col items-center justify-center pl-2 border-l border-slate-800">
+          <div class="bg-white p-1 rounded-lg shadow-lg border border-sky-400 flex items-center justify-center">
+            <canvas id="qr-canvas" class="w-24 h-24 block"></canvas>
+          </div>
+          <span class="text-[8px] text-sky-300 font-bold mt-1 font-mono tracking-wider">SCAN VALUE</span>
         </div>
-        <span class="text-[9px] text-sky-300 font-bold mt-1 font-mono tracking-wider">SCAN VALUE</span>
       </div>
     </div>
 
-    <!-- Hàng nút bấm thao tác (Đã bổ sung nút Khách hàng xác nhận) -->
+    <!-- HÀNG NÚT THAO TÁC ĐỒNG BỘ MÀU NỀN XANH LÁ NEON & ANIMATION PHÁT SÁNG -->
     <div class="grid grid-cols-4 gap-1.5">
-      <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition">
+      <button onclick="resetPoints()" class="py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition shadow-md">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         <span>Đo lại</span>
       </button>
 
-      <button onclick="takeScreenshot()" class="py-2 bg-emerald-700 hover:bg-emerald-600 active:scale-95 border border-emerald-600 rounded-xl text-[11px] font-bold text-white flex items-center justify-center gap-1 transition">
+      <!-- Nút Chụp ảnh phát sáng -->
+      <button onclick="takeScreenshot()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="camera" class="w-3.5 h-3.5"></i>
         <span>Chụp ảnh</span>
       </button>
 
-      <!-- Nút Khách Hàng Xác Nhận Mới -->
-      <button onclick="confirmCustomer()" class="py-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 border border-indigo-400/60 rounded-xl text-[11px] font-bold text-white shadow-md flex items-center justify-center gap-1 transition">
+      <!-- Nút Khách xác nhận phát sáng -->
+      <button onclick="confirmCustomer()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
         <span>Khách xác nhận</span>
       </button>
       
-      <button id="save-btn" onclick="saveDataDirectly()" class="py-2 bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 active:scale-95 rounded-xl text-[11px] font-bold text-white shadow-lg shadow-sky-600/30 flex items-center justify-center gap-1 transition">
+      <!-- Nút Sync & Report phát sáng -->
+      <button id="save-btn" onclick="saveDataDirectly()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
         <span>Sync & Report</span>
       </button>
@@ -305,6 +325,7 @@
     const infoPanel = document.getElementById('info-panel');
     const floatingActions = document.getElementById('floating-actions');
     const viewViewport = document.getElementById('view-viewport');
+    const osmMiniMap = document.getElementById('osm-mini-map');
 
     let scene, camera, renderer, raycaster, mouse;
     const points = [], pointMarkers = [];
@@ -355,23 +376,23 @@
       }
     }
 
-    // 3. Khởi tạo và Tạo Mã QR Code TO RÕ - Siêu Nét Dễ Quét
+    // 3. Khởi tạo và Tạo Mã QR Code
     function generateValuationQR() {
       const addr = document.getElementById('input-address').value || 'Chưa nhập địa chỉ';
       const landVal = document.getElementById('land-val').innerText;
       const buildVal = document.getElementById('build-val').innerText;
       const totalVal = document.getElementById('total-val').innerText;
 
-      const qrText = `KẾT QUẢ THẨM ĐỊNH GIÁ - SMARTVAL PRO\nĐịa chỉ: ${addr}\n- QSD Đất: ${landVal}\n- Công trình XD: ${buildVal}\n=> TỔNG GIÁ TRỊ: ${totalVal}\nThẩm định viên: Phạm Minh Tuấn`;
+      const qrText = `CHỨNG THƯ THẨM ĐỊNH GIÁ - SMARTVAL PRO\nĐịa chỉ: ${addr}\n- QSD Đất: ${landVal}\n- Công trình XD: ${buildVal}\n=> TỔNG GIÁ TRỊ: ${totalVal}\nThẩm định viên: Phạm Minh Tuấn`;
 
       if (!qrGenerator) {
         qrGenerator = new QRious({
           element: document.getElementById('qr-canvas'),
-          size: 300, // Kích thước ma trận gốc 300x300 siêu nét
+          size: 300,
           value: qrText,
           background: 'white',
           foreground: '#0f172a',
-          level: 'H' // Error Correction Level High giúp máy ảnh dễ quét
+          level: 'H'
         });
       } else {
         qrGenerator.value = qrText;
@@ -446,7 +467,7 @@
       }
     };
 
-    // 7. Đóng Băng Khung Hình Camera
+    // 7. Đóng Băng Khung Hình Camera & Mở Lại OSM Map
     function freezeCameraView() {
       const ctx = freezeCanvas.getContext('2d');
       const w = viewViewport.clientWidth;
@@ -461,9 +482,13 @@
       document.getElementById('status-ping').className = "relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500";
       document.getElementById('status-dot').className = "relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500";
       document.getElementById('status-text').innerText = "FROZEN";
+
+      // Mở lại bản đồ OSM sau khi đã hoàn tất đo chọn 4 điểm
+      osmMiniMap.classList.remove('hidden');
+      if (mapOSM) mapOSM.invalidateSize();
     }
 
-    // 8. Xử lý Chạm Chọn Điểm
+    // 8. Xử lý Chạm Chọn Điểm (ẢN OSM MAP KHI ĐANG CHẤM)
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
@@ -548,7 +573,7 @@
       lucide.createIcons();
     };
 
-    // 10. Chụp Ảnh Chứng Thư Kết Hợp Đủ Thông Tin
+    // 10. Chụp Ảnh Chứng Thư
     window.takeScreenshot = function() {
       const exportCanvas = document.createElement('canvas');
       const canvasW = 1080;
@@ -577,7 +602,7 @@
 
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 36px sans-serif';
-      ctx.fillText('SmartVal Pro - Kết quả Khảo Sát Hiện Trường', 40, 60);
+      ctx.fillText('SmartVal Pro - Chứng Thư Khảo Sát Hiện Trường', 40, 60);
 
       ctx.fillStyle = '#cbd5e1';
       ctx.font = '24px monospace';
@@ -585,7 +610,7 @@
       const gpsStr = document.getElementById('input-gps').value;
       ctx.fillText(`Thời gian: ${clockStr} | GPS: ${gpsStr}`, 40, 105);
 
-      // 4. Vẽ QR Code To Rõ Lên Bức Ảnh Chụp
+      // 4. Vẽ QR Code Lên Bức Ảnh Chụp
       const qrCanvasSrc = document.getElementById('qr-canvas');
       if (qrCanvasSrc) {
         ctx.fillStyle = '#ffffff';
@@ -696,6 +721,9 @@
 
       freezeCanvas.classList.add('hidden');
       video.classList.remove('hidden');
+
+      // Ẩn lại bản đồ OSM khi đo lại
+      osmMiniMap.classList.add('hidden');
 
       document.getElementById('status-ping').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
       document.getElementById('status-dot').className = "relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500";
