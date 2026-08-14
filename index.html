@@ -38,6 +38,7 @@
       overflow: hidden;
       background: #000;
       border-bottom: 2px solid rgba(56, 189, 248, 0.4);
+      transition: height 0.3s ease;
     }
 
     #video-bg, #freeze-canvas, #canvas-container {
@@ -52,7 +53,6 @@
       pointer-events: auto;
     }
 
-    /* Bản đồ nhỏ OSM góc dưới bên phải khu vực AR */
     #osm-mini-map {
       position: absolute;
       bottom: 10px; right: 10px;
@@ -97,7 +97,6 @@
       100% { transform: scale(0.9); opacity: 0.8; }
     }
 
-    /* Style cho ô Input */
     .hud-input {
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid rgba(56, 189, 248, 0.3);
@@ -114,7 +113,6 @@
       box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
     }
 
-    /* ANIMATION PHÁT SÁNG NỔI BẬT KHI CHẠM NÚT (GLOW CLICK) */
     .btn-action-glow {
       background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
       border: 1px solid rgba(52, 211, 153, 0.5);
@@ -140,7 +138,7 @@
     <div id="canvas-container"></div>
     <div id="reticle-ui"></div>
 
-    <!-- BẢN ĐỒ NHỎ OSM ĐỊNH VỊ GÓC DƯỚI BÊN PHẢI (Ẩn khi đang chấm điểm) -->
+    <!-- BẢN ĐỒ NHỎ OSM -->
     <div id="osm-mini-map" class="hidden"></div>
 
     <!-- Header HUD -->
@@ -252,9 +250,8 @@
       </div>
     </div>
 
-    <!-- BẢNG ĐỊNH GIÁ: ĐÃ ĐƯA "KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG" LÊN LÀM TIÊU ĐỀ LỚN -->
+    <!-- BẢNG ĐỊNH GIÁ -->
     <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-2">
-      <!-- TIÊU ĐỀ LỚN LÊN CAO -->
       <div class="flex justify-between items-center mb-2 border-b border-sky-500/20 pb-1">
         <span class="text-[11px] font-extrabold text-sky-400 uppercase tracking-wider font-sans">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
         <span class="text-[10px] text-slate-400 font-mono">CL: <strong class="text-emerald-400 font-bold">85%</strong></span>
@@ -276,7 +273,7 @@
           </div>
         </div>
 
-        <!-- Mã QR Code To Rõ Dễ Quét -->
+        <!-- Canvas QR Code hiển thị trên UI -->
         <div class="flex flex-col items-center justify-center pl-2 border-l border-slate-800">
           <div class="bg-white p-1 rounded-lg shadow-lg border border-sky-400 flex items-center justify-center">
             <canvas id="qr-canvas" class="w-24 h-24 block"></canvas>
@@ -286,26 +283,23 @@
       </div>
     </div>
 
-    <!-- HÀNG NÚT THAO TÁC ĐỒNG BỘ MÀU NỀN XANH LÁ NEON & ANIMATION PHÁT SÁNG -->
+    <!-- HÀNG NÚT THAO TÁC -->
     <div class="grid grid-cols-4 gap-1.5">
       <button onclick="resetPoints()" class="py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition shadow-md">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         <span>Đo lại</span>
       </button>
 
-      <!-- Nút Chụp ảnh phát sáng -->
       <button onclick="takeScreenshot()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="camera" class="w-3.5 h-3.5"></i>
         <span>Chụp ảnh</span>
       </button>
 
-      <!-- Nút Khách xác nhận phát sáng -->
       <button onclick="confirmCustomer()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
         <span>Khách xác nhận</span>
       </button>
       
-      <!-- Nút Sync & Report phát sáng -->
       <button id="save-btn" onclick="saveDataDirectly()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
         <span>Sync & Report</span>
@@ -335,6 +329,26 @@
 
     let mapOSM = null, markerOSM = null;
     let qrGenerator = null;
+
+    // Hàm loại bỏ dấu Tiếng Việt triệt để tránh lỗi font khi quét QR
+    function removeVietnameseTones(str) {
+      if (!str) return '';
+      str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+      str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+      str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+      str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+      str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+      str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+      str = str.replace(/đ/g, "d");
+      str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+      str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+      str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+      str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+      str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+      str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
+      str = str.replace(/Đ/g, "D");
+      return str;
+    }
 
     // 1. Cập nhật Đồng hồ Realtime
     function updateClock() {
@@ -376,14 +390,17 @@
       }
     }
 
-    // 3. Khởi tạo và Tạo Mã QR Code
+    // 3. Khởi tạo & Tạo Mã QR Code Tiếng Việt Không Dấu (Sửa triệt để lỗi phông chữ)
     function generateValuationQR() {
-      const addr = document.getElementById('input-address').value || 'Chưa nhập địa chỉ';
+      const rawAddr = document.getElementById('input-address').value || 'Chua xac dinh';
+      const cleanAddr = removeVietnameseTones(rawAddr);
+
       const landVal = document.getElementById('land-val').innerText;
       const buildVal = document.getElementById('build-val').innerText;
       const totalVal = document.getElementById('total-val').innerText;
 
-      const qrText = `CHỨNG THƯ THẨM ĐỊNH GIÁ - SMARTVAL PRO\nĐịa chỉ: ${addr}\n- QSD Đất: ${landVal}\n- Công trình XD: ${buildVal}\n=> TỔNG GIÁ TRỊ: ${totalVal}\nThẩm định viên: Phạm Minh Tuấn`;
+      // Nội dung quét QR bằng Tiếng Việt Không Dấu chuẩn hóa 100%
+      const qrText = `CHUNG THU THAM DINH GIA - SMARTVAL PRO\nDia chi: ${cleanAddr}\n- QSD Dat: ${landVal}\n- Cong trinh XD: ${buildVal}\n=> TONG GIA TRI: ${totalVal}\nPham Minh Tuan - Appraiser`;
 
       if (!qrGenerator) {
         qrGenerator = new QRious({
@@ -467,7 +484,7 @@
       }
     };
 
-    // 7. Đóng Băng Khung Hình Camera & Mở Lại OSM Map
+    // 7. Đóng Băng Khung Hình Camera
     function freezeCameraView() {
       const ctx = freezeCanvas.getContext('2d');
       const w = viewViewport.clientWidth;
@@ -483,12 +500,11 @@
       document.getElementById('status-dot').className = "relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500";
       document.getElementById('status-text').innerText = "FROZEN";
 
-      // Mở lại bản đồ OSM sau khi đã hoàn tất đo chọn 4 điểm
       osmMiniMap.classList.remove('hidden');
       if (mapOSM) mapOSM.invalidateSize();
     }
 
-    // 8. Xử lý Chạm Chọn Điểm (ẢN OSM MAP KHI ĐANG CHẤM)
+    // 8. Xử lý Chạm Chọn Điểm
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
@@ -554,7 +570,7 @@
       scene.add(frameLine);
     }
 
-    // 9. Bật / Tắt Xem Trọn Vẹn Ảnh
+    // 9. Bật / Tắt Xem Trọn Vẹn Ảnh (Đã cập nhật lại Viewport linh hoạt)
     window.toggleInfoPanel = function() {
       isPanelCollapsed = !isPanelCollapsed;
       const toggleIcon = document.getElementById('toggle-icon');
@@ -568,12 +584,14 @@
         viewViewport.style.height = '50vh';
         toggleIcon.setAttribute('data-lucide', 'eye-off');
       }
-      onWindowResize();
-      if (mapOSM) mapOSM.invalidateSize();
+      setTimeout(() => {
+        onWindowResize();
+        if (mapOSM) mapOSM.invalidateSize();
+      }, 50);
       lucide.createIcons();
     };
 
-    // 10. Chụp Ảnh Chứng Thư
+    // 10. Chụp Ảnh Chứng Thư (Đã đưa QR Code xuống khung kết quả bên dưới phía tay phải)
     window.takeScreenshot = function() {
       const exportCanvas = document.createElement('canvas');
       const canvasW = 1080;
@@ -585,7 +603,7 @@
       ctx.fillStyle = '#050b14';
       ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // 1. Vẽ Ảnh Camera / Freeze
+      // 1. Vẽ Ảnh Camera / Freeze (Phần ảnh công trình phía trên)
       const photoH = 1100;
       if (!freezeCanvas.classList.contains('hidden')) {
         ctx.drawImage(freezeCanvas, 0, 0, canvasW, photoH);
@@ -610,15 +628,7 @@
       const gpsStr = document.getElementById('input-gps').value;
       ctx.fillText(`Thời gian: ${clockStr} | GPS: ${gpsStr}`, 40, 105);
 
-      // 4. Vẽ QR Code Lên Bức Ảnh Chụp
-      const qrCanvasSrc = document.getElementById('qr-canvas');
-      if (qrCanvasSrc) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(canvasW - 240, 160, 200, 200);
-        ctx.drawImage(qrCanvasSrc, canvasW - 230, 170, 180, 180);
-      }
-
-      // 5. Vẽ Card Thông Tin Thẩm Định
+      // 4. Vẽ Card Thông Tin Thẩm Định Ở Phía Dưới
       const cardY = photoH + 40;
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(30, cardY, canvasW - 60, 720);
@@ -656,23 +666,39 @@
       ctx.font = '28px monospace';
       ctx.fillText(`Giá trị QSD Đất:`, 60, cardY + 320);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${landVal}`, 600, cardY + 320);
+      ctx.fillText(`${landVal}`, 520, cardY + 320);
 
       ctx.fillStyle = '#94a3b8';
       ctx.fillText(`Giá trị Công trình xây dựng:`, 60, cardY + 390);
       ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${buildVal}`, 600, cardY + 390);
+      ctx.fillText(`${buildVal}`, 520, cardY + 390);
 
       ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 36px sans-serif';
+      ctx.font = 'bold 34px sans-serif';
       ctx.fillText(`TỔNG GIÁ TRỊ THẨM ĐỊNH:`, 60, cardY + 500);
-      ctx.font = 'bold 42px monospace';
+      ctx.font = 'bold 38px monospace';
       ctx.fillText(`${totalVal}`, 60, cardY + 570);
+
+      // 5. VẼ MÃ QR CODE XUỐNG PHÍA DƯỚI BÊN PHẢI TRONG KHUNG KẾT QUẢ CẦN TRỐNG
+      const qrCanvasSrc = document.getElementById('qr-canvas');
+      if (qrCanvasSrc) {
+        const qrBoxSize = 220;
+        const qrX = canvasW - 60 - qrBoxSize - 20;
+        const qrY = cardY + 440;
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrX, qrY, qrBoxSize, qrBoxSize);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(qrX, qrY, qrBoxSize, qrBoxSize);
+
+        ctx.drawImage(qrCanvasSrc, qrX + 10, qrY + 10, qrBoxSize - 20, qrBoxSize - 20);
+      }
 
       const confirmStatusText = isCustomerConfirmed ? "ĐÃ XÁC NHẬN BỞI KHÁCH HÀNG" : "CHỜ XÁC NHẬN";
       ctx.fillStyle = '#64748b';
       ctx.font = 'italic 22px sans-serif';
-      ctx.fillText(`Thẩm định viên: Phạm Minh Tuấn | ${confirmStatusText}`, 60, cardY + 660);
+      ctx.fillText(`Thẩm định viên: Phạm Minh Tuấn | ${confirmStatusText}`, 60, cardY + 670);
 
       const link = document.createElement('a');
       link.download = `SmartVal_Report_${Date.now()}.png`;
@@ -722,7 +748,6 @@
       freezeCanvas.classList.add('hidden');
       video.classList.remove('hidden');
 
-      // Ẩn lại bản đồ OSM khi đo lại
       osmMiniMap.classList.add('hidden');
 
       document.getElementById('status-ping').className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
