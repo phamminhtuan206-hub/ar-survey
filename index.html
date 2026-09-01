@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>SmartVal Pro - AR Field Survey & Automated Valuation</title>
+  <title>SmartVal Pro - AR Field Survey & Saved Polygons</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,7 +14,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Leaflet CSS & JS (Bản đồ OpenStreetMap) -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -221,8 +221,8 @@
           <span>Khảo sát AR</span>
         </button>
         <button id="tab-polygon-btn" onclick="switchTab('polygon')" class="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 flex items-center gap-1 transition">
-          <i data-lucide="map" class="w-3.5 h-3.5"></i>
-          <span>Nạp Ranh GPS</span>
+          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          <span>Ranh GPS (<span id="saved-count">0</span>/5)</span>
         </button>
       </div>
 
@@ -299,34 +299,36 @@
       </div>
     </div>
 
-    <!-- TAB 2: NẠP DỮ LIỆU TỌA ĐỘ RANH ĐẤT GPS -->
-    <div id="tab-content-polygon" class="flex-1 overflow-y-auto hidden">
-      <div class="space-y-2">
-        <div class="flex justify-between items-center">
-          <label class="text-[11px] font-semibold text-sky-400">Danh sách tọa độ đỉnh thửa đất (lat, long):</label>
-          <button onclick="loadSamplePolygon()" class="text-[10px] text-emerald-400 underline">Mẫu ví dụ</button>
-        </div>
-        
-        <textarea id="polygon-coords-input" class="hud-input w-full h-24 font-mono text-[11px] leading-snug p-2" placeholder="Nhập tọa độ phân cách bằng khoảng trắng, tab hoặc phẩy:
+    <!-- TAB 2: QUẢN LÝ & LƯU TRỮ RANH ĐẤT POLYGON (TỐI ĐA 5 TÀI SẢN) -->
+    <div id="tab-content-polygon" class="flex-1 overflow-y-auto hidden pr-1">
+      <!-- Khung nhập tài sản mới -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 mb-2 space-y-1.5">
+        <input id="asset-name-input" type="text" class="hud-input w-full text-[11px]" placeholder="Tên / Địa chỉ tài sản (VD: Thửa 123 - Bình Thạnh)">
+        <textarea id="polygon-coords-input" class="hud-input w-full h-16 font-mono text-[10px] leading-snug p-1.5" placeholder="Dán tọa độ (khoảng trắng / phẩy / tab):
 10.817777858561 106.70436976535
 10.817738858562 106.70437376644
-10.817723858769 106.70423576637
-10.817761858723 106.70423176528
-10.817777858561 106.70436976535"></textarea>
-
-        <div class="flex gap-2">
-          <button onclick="buildGPSPolygon()" class="btn-action-glow flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1">
-            <i data-lucide="layers" class="w-3.5 h-3.5"></i>
-            <span>Khởi tạo Ranh đất 3D</span>
+10.817723858769 106.70423576637"></textarea>
+        
+        <div class="flex gap-1.5">
+          <button onclick="saveCurrentPolygon()" class="btn-action-glow flex-1 py-1.5 rounded text-[11px] font-bold flex items-center justify-center gap-1">
+            <i data-lucide="save" class="w-3 h-3"></i>
+            <span>Lưu vào bộ nhớ (Max 5)</span>
           </button>
-          <button onclick="clearGPSPolygon()" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300">
-            Xóa Ranh
+          <button onclick="loadSamplePolygon()" class="px-2 py-1.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-sky-300">
+            Mẫu
           </button>
         </div>
+      </div>
 
-        <p class="text-[10px] text-slate-400 font-sans italic">
-          * Tự động nhận diện định dạng phân cách bằng khoảng trắng, dấu phẩy hoặc TAB.
-        </p>
+      <!-- Danh sách tài sản đã lưu -->
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Tài sản đã lưu</span>
+          <button onclick="clearAllSavedPolygons()" class="text-[9px] text-rose-400 hover:underline">Xóa tất cả</button>
+        </div>
+        <div id="saved-assets-list" class="space-y-1.5">
+          <!-- Danh sách render tự động ở đây -->
+        </div>
       </div>
     </div>
 
@@ -377,6 +379,157 @@
     let mapOSM = null, markerOSM = null, osmPolygonLayer = null;
     let qrGenerator = null;
 
+    // HỆ THỐNG LƯU TRỮ LOCAL STORAGE TỐI ĐA 5 TÀI SẢN
+    const STORAGE_KEY = "SMARTVAL_SAVED_POLYGONS_V1";
+
+    function getSavedPolygons() {
+      const data = localStorage.getItem(STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    }
+
+    function savePolygonData(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+      renderSavedAssetsList();
+    }
+
+    function renderSavedAssetsList() {
+      const list = getSavedPolygons();
+      document.getElementById('saved-count').innerText = list.length;
+      const container = document.getElementById('saved-assets-list');
+      container.innerHTML = "";
+
+      if (list.length === 0) {
+        container.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">Chưa lưu tài sản nào (Tối đa 5 tài sản)</p>`;
+        return;
+      }
+
+      list.forEach((item, index) => {
+        const itemEl = document.createElement('div');
+        itemEl.className = "flex items-center justify-between bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-[10px]";
+        itemEl.innerHTML = `
+          <div class="flex-1 pr-1 truncate">
+            <p class="font-bold text-sky-300 truncate">${index + 1}. ${item.name || 'Thửa đất chưa tên'}</p>
+            <p class="font-mono text-slate-400 text-[9px] truncate">${item.coords.length} mốc | ${item.coords[0][0]}, ${item.coords[0][1]}</p>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="applySavedPolygon(${index})" class="px-2 py-0.5 bg-emerald-600/80 text-white rounded font-bold hover:bg-emerald-500">Xem ranh</button>
+            <button onclick="deleteSavedPolygon(${index})" class="px-1.5 py-0.5 bg-rose-900/60 text-rose-300 border border-rose-700/50 rounded hover:bg-rose-800">Xóa</button>
+          </div>
+        `;
+        container.appendChild(itemEl);
+      });
+    }
+
+    window.saveCurrentPolygon = function() {
+      const list = getSavedPolygons();
+      if (list.length >= 5) {
+        alert("Đã đạt giới hạn tối đa 5 tài sản! Vui lòng xóa bớt tài sản cũ để lưu tài sản mới.");
+        return;
+      }
+
+      const name = document.getElementById('asset-name-input').value.trim() || `Tài sản ${list.length + 1}`;
+      const textVal = document.getElementById('polygon-coords-input').value.trim();
+
+      if (!textVal) {
+        alert("Vui lòng dán tọa độ GPS của tài sản trước khi lưu!");
+        return;
+      }
+
+      const parsedCoords = parseCoordinates(textVal);
+      if (parsedCoords.length < 3) {
+        alert("Tọa độ không hợp lệ hoặc ít hơn 3 mốc!");
+        return;
+      }
+
+      list.push({
+        name: name,
+        coords: parsedCoords,
+        rawText: textVal,
+        createdAt: new Date().toLocaleString('vi-VN')
+      });
+
+      savePolygonData(list);
+      document.getElementById('asset-name-input').value = "";
+      document.getElementById('polygon-coords-input').value = "";
+      alert(`Đã lưu thành công: ${name}`);
+    };
+
+    window.applySavedPolygon = function(index) {
+      const list = getSavedPolygons();
+      if (!list[index]) return;
+
+      const item = list[index];
+      renderPolygonOnMapAnd3D(item.coords);
+
+      document.getElementById('input-address').value = item.name;
+      document.getElementById('input-gps').value = `${item.coords[0][0]}, ${item.coords[0][1]}`;
+
+      switchTab('survey');
+      alert(`Đã kích hoạt ranh đất 3D cho: ${item.name}`);
+    };
+
+    window.deleteSavedPolygon = function(index) {
+      const list = getSavedPolygons();
+      if (confirm(`Xóa tài sản: "${list[index]?.name}"?`)) {
+        list.splice(index, 1);
+        savePolygonData(list);
+      }
+    };
+
+    window.clearAllSavedPolygons = function() {
+      if (confirm("Xóa toàn bộ 5 tài sản đã lưu để giải phóng bộ nhớ?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        renderSavedAssetsList();
+        clearGPSPolygon();
+      }
+    };
+
+    function parseCoordinates(text) {
+      const lines = text.split('\n');
+      const coords = [];
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed) {
+          const parts = trimmed.split(/[\s,;]+/).filter(Boolean);
+          if (parts.length >= 2) {
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              coords.push([lat, lng]);
+            }
+          }
+        }
+      });
+      return coords;
+    }
+
+    function renderPolygonOnMapAnd3D(coords) {
+      if (mapOSM) {
+        if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
+        osmPolygonLayer = L.polygon(coords, { color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35 }).addTo(mapOSM);
+        mapOSM.fitBounds(osmPolygonLayer.getBounds());
+      }
+
+      if (gpsPolygonLine) scene.remove(gpsPolygonLine);
+      const poly3DPoints = [];
+      const originLat = coords[0][0];
+      const originLng = coords[0][1];
+
+      coords.forEach(pt => {
+        const dLat = (pt[0] - originLat) * 111320;
+        const dLng = (pt[1] - originLng) * 40075000 * Math.cos(originLat * Math.PI / 180) / 360;
+        poly3DPoints.push(new THREE.Vector3(dLng * 0.1, dLat * 0.1, 0));
+      });
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(poly3DPoints);
+      const material = new THREE.LineDashedMaterial({ color: 0x34d399, dashSize: 0.1, gapSize: 0.05, linewidth: 3 });
+      gpsPolygonLine = new THREE.Line(geometry, material);
+      gpsPolygonLine.computeLineDistances();
+      scene.add(gpsPolygonLine);
+
+      osmMiniMap.classList.remove('hidden');
+    }
+
     function removeVietnameseTones(str) {
       if (!str) return '';
       str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
@@ -396,7 +549,6 @@
       return str;
     }
 
-    // Chuyển đổi Tab Menu
     window.switchTab = function(tabName) {
       const surveyTabBtn = document.getElementById('tab-survey-btn');
       const polygonTabBtn = document.getElementById('tab-polygon-btn');
@@ -417,8 +569,8 @@
       lucide.createIcons();
     };
 
-    // Mẫu ví dụ tọa độ ranh đất chuẩn khoảng trắng
     window.loadSamplePolygon = function() {
+      document.getElementById('asset-name-input').value = "Thửa 88 - Phường Bình Lợi Trung";
       document.getElementById('polygon-coords-input').value = 
 `10.817777858561 106.70436976535
 10.817738858562 106.70437376644
@@ -427,75 +579,10 @@
 10.817777858561 106.70436976535`;
     };
 
-    // XỬ LÝ KHỞI TẠO RANH ĐẤT LÂN CẬN VỚI MỌI ĐỊNH DẠNG PHÂN CÁCH (KHOẢNG TRẮNG, DẤU PHẨY, TAB)
-    window.buildGPSPolygon = function() {
-      const textVal = document.getElementById('polygon-coords-input').value.trim();
-      if (!textVal) {
-        alert("Vui lòng nhập danh sách tọa độ GPS!");
-        return;
-      }
-
-      const lines = textVal.split('\n');
-      const coords = [];
-
-      lines.forEach(line => {
-        const trimmed = line.trim();
-        if (trimmed) {
-          // Tách bằng khoảng trắng, dấu phẩy, TAB hoặc chấm phẩy
-          const parts = trimmed.split(/[\s,;]+/).filter(Boolean);
-          if (parts.length >= 2) {
-            const lat = parseFloat(parts[0]);
-            const lng = parseFloat(parts[1]);
-            if (!isNaN(lat) && !isNaN(lng)) {
-              coords.push([lat, lng]);
-            }
-          }
-        }
-      });
-
-      if (coords.length < 3) {
-        alert("Khung Ranh đất cần ít nhất 3 điểm tọa độ hợp lệ!");
-        return;
-      }
-
-      // Cập nhật lên Bản đồ nhỏ OSM
-      if (mapOSM) {
-        if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
-        osmPolygonLayer = L.polygon(coords, { color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35 }).addTo(mapOSM);
-        mapOSM.fitBounds(osmPolygonLayer.getBounds());
-      }
-
-      // Dựng Polygon 3D giả lập trên viewport AR
-      if (gpsPolygonLine) scene.remove(gpsPolygonLine);
-      const poly3DPoints = [];
-      const originLat = coords[0][0];
-      const originLng = coords[0][1];
-
-      coords.forEach(pt => {
-        const dLat = (pt[0] - originLat) * 111320;
-        const dLng = (pt[1] - originLng) * 40075000 * Math.cos(originLat * Math.PI / 180) / 360;
-        poly3DPoints.push(new THREE.Vector3(dLng * 0.1, dLat * 0.1, 0));
-      });
-
-      const geometry = new THREE.BufferGeometry().setFromPoints(poly3DPoints);
-      const material = new THREE.LineDashedMaterial({ color: 0x34d399, dashSize: 0.1, gapSize: 0.05, linewidth: 3 });
-      gpsPolygonLine = new THREE.Line(geometry, material);
-      gpsPolygonLine.computeLineDistances();
-      scene.add(gpsPolygonLine);
-
-      // Cập nhật tọa độ điểm đầu làm gốc GPS trên ô nhập
-      document.getElementById('input-gps').value = `${coords[0][0]}, ${coords[0][1]}`;
-
-      alert(`Đã nạp thành công Ranh đất 3D với ${coords.length} mốc tọa độ!`);
-      switchTab('survey');
-      osmMiniMap.classList.remove('hidden');
-    };
-
     window.clearGPSPolygon = function() {
       if (osmPolygonLayer && mapOSM) mapOSM.removeLayer(osmPolygonLayer);
       if (gpsPolygonLine) scene.remove(gpsPolygonLine);
       document.getElementById('polygon-coords-input').value = "";
-      alert("Đã xóa khung Ranh đất!");
     };
 
     function updateClock() {
@@ -947,6 +1034,7 @@
     init3D();
     initOSMMiniMap();
     generateValuationQR();
+    renderSavedAssetsList();
   </script>
 </body>
 </html>
