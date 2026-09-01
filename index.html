@@ -102,7 +102,7 @@
       border: 1px solid rgba(56, 189, 248, 0.3);
       color: #f8fafc;
       border-radius: 6px;
-      padding: 2px 6px;
+      padding: 4px 8px;
       font-size: 11px;
       font-family: monospace;
       outline: none;
@@ -127,6 +127,13 @@
       box-shadow: 0 0 20px rgba(52, 211, 153, 0.9), 0 0 30px rgba(16, 185, 129, 0.6);
       filter: brightness(1.25);
     }
+
+    .tab-btn-active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: #38bdf8;
+      color: #38bdf8;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body class="text-slate-100 select-none">
@@ -142,7 +149,7 @@
     <div id="osm-mini-map" class="hidden"></div>
 
     <!-- Header HUD -->
-    <header class="absolute top-0 left-0 right-0 z-20 p-2.5 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent pointer-events-none">
+    <header class="absolute top-0 left-0 right-0 z-20 p-2 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent pointer-events-none">
       <div class="max-w-md mx-auto flex items-center justify-between">
         <div class="flex items-center gap-1.5">
           <div class="w-7 h-7 rounded-lg bg-sky-500/20 border border-sky-400/50 flex items-center justify-center backdrop-blur-md">
@@ -170,7 +177,7 @@
     </header>
 
     <!-- Live Status HUD -->
-    <div class="absolute top-12 left-0 right-0 z-20 px-2.5 pointer-events-none">
+    <div class="absolute top-11 left-0 right-0 z-20 px-2.5 pointer-events-none">
       <div class="max-w-md mx-auto flex justify-between items-center text-[10px]">
         <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2 py-0.5 rounded backdrop-blur-md">
           <span class="relative flex h-1.5 w-1.5">
@@ -192,7 +199,7 @@
       </div>
     </div>
 
-    <!-- Nút Thao Tác Ẩn / Chụp -->
+    <!-- Floating Action Buttons -->
     <div id="floating-actions" class="absolute top-20 right-2.5 z-30 hidden flex-col gap-1.5">
       <button onclick="toggleInfoPanel()" class="p-2 bg-slate-900/90 border border-sky-500/50 hover:bg-slate-800 rounded-full text-sky-400 shadow-lg backdrop-blur-md transition active:scale-95">
         <i id="toggle-icon" data-lucide="eye-off" class="w-4 h-4"></i>
@@ -203,104 +210,144 @@
     </div>
   </div>
 
-  <!-- BẢNG ĐIỀU KHIỂN NỬA DƯỚI -->
-  <div id="info-panel" class="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto bg-slate-950 border-t border-sky-500/40 p-3 shadow-2xl transition-all duration-300 h-[50vh] overflow-y-auto">
+  <!-- BẢNG ĐIỀU KHIỂN NỬA DƯỚI DẠNG TAB MENU -->
+  <div id="info-panel" class="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto bg-slate-950 border-t border-sky-500/40 p-2.5 shadow-2xl transition-all duration-300 h-[50vh] flex flex-col justify-between">
     
-    <div class="border-b border-slate-800/80 pb-1.5 mb-1.5">
-      <div class="flex items-center justify-between mb-1">
-        <div class="flex items-center gap-1 text-[11px] text-sky-400 font-semibold uppercase tracking-wide">
-          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-          <span>Vị trí khảo sát</span>
-        </div>
-        <button onclick="getLocationGPS()" class="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 rounded text-[10px] text-sky-300 font-medium transition active:scale-95">
-          <i data-lucide="crosshair" class="w-3 h-3 text-sky-400"></i>
-          <span>GPS</span>
+    <!-- THANH MENU TAB CHUYỂN ĐỔI CHỨC NĂNG -->
+    <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
+      <div class="flex gap-1.5">
+        <button id="tab-survey-btn" onclick="switchTab('survey')" class="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 flex items-center gap-1 transition tab-btn-active">
+          <i data-lucide="ruler" class="w-3.5 h-3.5"></i>
+          <span>Khảo sát AR</span>
+        </button>
+        <button id="tab-polygon-btn" onclick="switchTab('polygon')" class="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 flex items-center gap-1 transition">
+          <i data-lucide="map" class="w-3.5 h-3.5"></i>
+          <span>Nạp Ranh GPS</span>
         </button>
       </div>
 
-      <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="" placeholder="Nhập địa chỉ bất động sản..." oninput="generateValuationQR()">
-      
-      <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
-        <span>Tọa độ:</span>
-        <input id="input-gps" type="text" class="hud-input text-[10px] py-0.5 text-amber-300 flex-1" value="10.769104, 106.682382" placeholder="Lat, Long" onchange="updateOSMMapFromInput()">
-      </div>
+      <button onclick="getLocationGPS()" class="flex items-center gap-1 px-2 py-0.5 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 rounded text-[10px] text-sky-300 font-medium transition active:scale-95">
+        <i data-lucide="crosshair" class="w-3 h-3 text-sky-400"></i>
+        <span>GPS</span>
+      </button>
     </div>
 
-    <!-- Kích thước tự nhập -->
-    <div class="grid grid-cols-5 gap-1 text-center mb-1.5">
-      <div>
-        <span class="text-[9px] text-slate-400 block mb-0.5">Rộng (m)</span>
-        <input id="input-width" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
-      </div>
-      <div>
-        <span class="text-[9px] text-slate-400 block mb-0.5">Dài (m)</span>
-        <input id="input-length" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
-      </div>
-      <div>
-        <span class="text-[9px] text-slate-400 block mb-0.5">Số tầng</span>
-        <input id="input-floors" type="number" step="1" class="hud-input w-full text-center text-amber-300 font-bold" value="" oninput="recalculateValuation()">
-      </div>
-      <div>
-        <span class="text-[9px] text-slate-400 block mb-0.5">DT Đất (m²)</span>
-        <input id="input-land-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
-      </div>
-      <div>
-        <span class="text-[9px] text-slate-400 block mb-0.5">DT Sàn (m²)</span>
-        <input id="input-build-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
-      </div>
-    </div>
-
-    <!-- BẢNG ĐỊNH GIÁ -->
-    <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2.5 mb-2">
-      <div class="flex justify-between items-center mb-2 border-b border-sky-500/20 pb-1">
-        <span class="text-[11px] font-extrabold text-sky-400 uppercase tracking-wider font-sans">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
-        <span class="text-[10px] text-slate-400 font-mono">CL: <strong class="text-emerald-400 font-bold">85%</strong></span>
-      </div>
-
-      <div class="flex justify-between items-center">
-        <div class="flex-1 pr-2 space-y-1 text-xs font-mono">
-          <div class="flex justify-between text-slate-300">
-            <span>QSD Đất:</span>
-            <span id="land-val" class="font-bold text-slate-100">0 ₫</span>
-          </div>
-          <div class="flex justify-between text-slate-300">
-            <span>Công trình XD:</span>
-            <span id="build-val" class="font-bold text-slate-100">0 ₫</span>
-          </div>
-          <div class="border-t border-sky-500/30 pt-1 mt-1 flex justify-between items-center">
-            <span class="text-[11px] font-bold text-emerald-400 uppercase font-sans">TỔNG GIÁ TRỊ:</span>
-            <span id="total-val" class="text-xs font-black text-emerald-400">0 ₫</span>
-          </div>
-        </div>
-
-        <!-- Canvas QR Code hiển thị trên UI -->
-        <div class="flex flex-col items-center justify-center pl-2 border-l border-slate-800">
-          <div class="bg-white p-1 rounded-lg shadow-lg border border-sky-400 flex items-center justify-center">
-            <canvas id="qr-canvas" class="w-24 h-24 block"></canvas>
-          </div>
-          <span class="text-[8px] text-sky-300 font-bold mt-1 font-mono tracking-wider">SCAN VALUE</span>
+    <!-- TAB 1: NỘI DUNG KHẢO SÁT HIỆN TRƯỜNG -->
+    <div id="tab-content-survey" class="flex-1 overflow-y-auto">
+      <div class="mb-1.5">
+        <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="" placeholder="Nhập địa chỉ bất động sản..." oninput="generateValuationQR()">
+        <div class="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-mono">
+          <span>Tọa độ:</span>
+          <input id="input-gps" type="text" class="hud-input text-[10px] py-0.5 text-amber-300 flex-1" value="10.817777858561, 106.70436976535" placeholder="Lat, Long" onchange="updateOSMMapFromInput()">
         </div>
       </div>
+
+      <!-- Kích thước tự nhập -->
+      <div class="grid grid-cols-5 gap-1 text-center mb-1.5">
+        <div>
+          <span class="text-[9px] text-slate-400 block mb-0.5">Rộng (m)</span>
+          <input id="input-width" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
+        </div>
+        <div>
+          <span class="text-[9px] text-slate-400 block mb-0.5">Dài (m)</span>
+          <input id="input-length" type="number" step="0.01" class="hud-input w-full text-center text-sky-300 font-bold" value="" oninput="recalculateValuation()">
+        </div>
+        <div>
+          <span class="text-[9px] text-slate-400 block mb-0.5">Số tầng</span>
+          <input id="input-floors" type="number" step="1" class="hud-input w-full text-center text-amber-300 font-bold" value="" oninput="recalculateValuation()">
+        </div>
+        <div>
+          <span class="text-[9px] text-slate-400 block mb-0.5">DT Đất (m²)</span>
+          <input id="input-land-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
+        </div>
+        <div>
+          <span class="text-[9px] text-slate-400 block mb-0.5">DT Sàn (m²)</span>
+          <input id="input-build-area" type="number" step="0.1" class="hud-input w-full text-center text-emerald-400 font-bold" value="0" oninput="recalculateValuation()">
+        </div>
+      </div>
+
+      <!-- Bảng kết quả định giá -->
+      <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2 mb-2">
+        <div class="flex justify-between items-center mb-1 border-b border-sky-500/20 pb-0.5">
+          <span class="text-[10px] font-extrabold text-sky-400 uppercase tracking-wider font-sans">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
+          <span class="text-[9px] text-slate-400 font-mono">CL: <strong class="text-emerald-400 font-bold">85%</strong></span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <div class="flex-1 pr-2 space-y-0.5 text-xs font-mono">
+            <div class="flex justify-between text-slate-300">
+              <span>QSD Đất:</span>
+              <span id="land-val" class="font-bold text-slate-100">0 ₫</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Công trình XD:</span>
+              <span id="build-val" class="font-bold text-slate-100">0 ₫</span>
+            </div>
+            <div class="border-t border-sky-500/30 pt-0.5 mt-0.5 flex justify-between items-center">
+              <span class="text-[10px] font-bold text-emerald-400 uppercase font-sans">TỔNG GIÁ TRỊ:</span>
+              <span id="total-val" class="text-xs font-black text-emerald-400">0 ₫</span>
+            </div>
+          </div>
+
+          <div class="flex flex-col items-center justify-center pl-2 border-l border-slate-800">
+            <div class="bg-white p-1 rounded-lg shadow-lg border border-sky-400 flex items-center justify-center">
+              <canvas id="qr-canvas" class="w-20 h-20 block"></canvas>
+            </div>
+            <span class="text-[8px] text-sky-300 font-bold mt-0.5 font-mono tracking-wider">SCAN VALUE</span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- HÀNG NÚT THAO TÁC -->
-    <div class="grid grid-cols-4 gap-1.5">
-      <button onclick="resetPoints()" class="py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition shadow-md">
+    <!-- TAB 2: NẠP DỮ LIỆU TỌA ĐỘ RANH ĐẤT GPS -->
+    <div id="tab-content-polygon" class="flex-1 overflow-y-auto hidden">
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <label class="text-[11px] font-semibold text-sky-400">Danh sách tọa độ đỉnh thửa đất (lat, long):</label>
+          <button onclick="loadSamplePolygon()" class="text-[10px] text-emerald-400 underline">Mẫu ví dụ</button>
+        </div>
+        
+        <textarea id="polygon-coords-input" class="hud-input w-full h-24 font-mono text-[11px] leading-snug p-2" placeholder="Nhập tọa độ phân cách bằng khoảng trắng, tab hoặc phẩy:
+10.817777858561 106.70436976535
+10.817738858562 106.70437376644
+10.817723858769 106.70423576637
+10.817761858723 106.70423176528
+10.817777858561 106.70436976535"></textarea>
+
+        <div class="flex gap-2">
+          <button onclick="buildGPSPolygon()" class="btn-action-glow flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1">
+            <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+            <span>Khởi tạo Ranh đất 3D</span>
+          </button>
+          <button onclick="clearGPSPolygon()" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-slate-300">
+            Xóa Ranh
+          </button>
+        </div>
+
+        <p class="text-[10px] text-slate-400 font-sans italic">
+          * Tự động nhận diện định dạng phân cách bằng khoảng trắng, dấu phẩy hoặc TAB.
+        </p>
+      </div>
+    </div>
+
+    <!-- HÀNG NÚT THAO TÁC BOTTOM -->
+    <div class="grid grid-cols-4 gap-1.5 pt-1.5 border-t border-slate-800">
+      <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition shadow-md">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
         <span>Đo lại</span>
       </button>
 
-      <button onclick="takeScreenshot()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
+      <button onclick="takeScreenshot()" class="btn-action-glow py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="camera" class="w-3.5 h-3.5"></i>
         <span>Chụp ảnh</span>
       </button>
 
-      <button onclick="confirmCustomer()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
+      <button onclick="confirmCustomer()" class="btn-action-glow py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
         <span>Khách xác nhận</span>
       </button>
       
-      <button id="save-btn" onclick="saveDataDirectly()" class="btn-action-glow py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
+      <button id="save-btn" onclick="saveDataDirectly()" class="btn-action-glow py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1">
         <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
         <span>Sync & Report</span>
       </button>
@@ -323,14 +370,13 @@
 
     let scene, camera, renderer, raycaster, mouse;
     const points = [], pointMarkers = [];
-    let frameLine = null;
+    let frameLine = null, gpsPolygonLine = null;
     let isPanelCollapsed = false;
     let isCustomerConfirmed = false;
 
-    let mapOSM = null, markerOSM = null;
+    let mapOSM = null, markerOSM = null, osmPolygonLayer = null;
     let qrGenerator = null;
 
-    // Hàm loại bỏ dấu Tiếng Việt triệt để tránh lỗi font khi quét QR
     function removeVietnameseTones(str) {
       if (!str) return '';
       str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
@@ -350,7 +396,108 @@
       return str;
     }
 
-    // 1. Cập nhật Đồng hồ Realtime
+    // Chuyển đổi Tab Menu
+    window.switchTab = function(tabName) {
+      const surveyTabBtn = document.getElementById('tab-survey-btn');
+      const polygonTabBtn = document.getElementById('tab-polygon-btn');
+      const surveyContent = document.getElementById('tab-content-survey');
+      const polygonContent = document.getElementById('tab-content-polygon');
+
+      if (tabName === 'survey') {
+        surveyTabBtn.classList.add('tab-btn-active');
+        polygonTabBtn.classList.remove('tab-btn-active');
+        surveyContent.classList.remove('hidden');
+        polygonContent.classList.add('hidden');
+      } else {
+        polygonTabBtn.classList.add('tab-btn-active');
+        surveyTabBtn.classList.remove('tab-btn-active');
+        polygonContent.classList.remove('hidden');
+        surveyContent.classList.add('hidden');
+      }
+      lucide.createIcons();
+    };
+
+    // Mẫu ví dụ tọa độ ranh đất chuẩn khoảng trắng
+    window.loadSamplePolygon = function() {
+      document.getElementById('polygon-coords-input').value = 
+`10.817777858561 106.70436976535
+10.817738858562 106.70437376644
+10.817723858769 106.70423576637
+10.817761858723 106.70423176528
+10.817777858561 106.70436976535`;
+    };
+
+    // XỬ LÝ KHỞI TẠO RANH ĐẤT LÂN CẬN VỚI MỌI ĐỊNH DẠNG PHÂN CÁCH (KHOẢNG TRẮNG, DẤU PHẨY, TAB)
+    window.buildGPSPolygon = function() {
+      const textVal = document.getElementById('polygon-coords-input').value.trim();
+      if (!textVal) {
+        alert("Vui lòng nhập danh sách tọa độ GPS!");
+        return;
+      }
+
+      const lines = textVal.split('\n');
+      const coords = [];
+
+      lines.forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed) {
+          // Tách bằng khoảng trắng, dấu phẩy, TAB hoặc chấm phẩy
+          const parts = trimmed.split(/[\s,;]+/).filter(Boolean);
+          if (parts.length >= 2) {
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            if (!isNaN(lat) && !isNaN(lng)) {
+              coords.push([lat, lng]);
+            }
+          }
+        }
+      });
+
+      if (coords.length < 3) {
+        alert("Khung Ranh đất cần ít nhất 3 điểm tọa độ hợp lệ!");
+        return;
+      }
+
+      // Cập nhật lên Bản đồ nhỏ OSM
+      if (mapOSM) {
+        if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
+        osmPolygonLayer = L.polygon(coords, { color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35 }).addTo(mapOSM);
+        mapOSM.fitBounds(osmPolygonLayer.getBounds());
+      }
+
+      // Dựng Polygon 3D giả lập trên viewport AR
+      if (gpsPolygonLine) scene.remove(gpsPolygonLine);
+      const poly3DPoints = [];
+      const originLat = coords[0][0];
+      const originLng = coords[0][1];
+
+      coords.forEach(pt => {
+        const dLat = (pt[0] - originLat) * 111320;
+        const dLng = (pt[1] - originLng) * 40075000 * Math.cos(originLat * Math.PI / 180) / 360;
+        poly3DPoints.push(new THREE.Vector3(dLng * 0.1, dLat * 0.1, 0));
+      });
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(poly3DPoints);
+      const material = new THREE.LineDashedMaterial({ color: 0x34d399, dashSize: 0.1, gapSize: 0.05, linewidth: 3 });
+      gpsPolygonLine = new THREE.Line(geometry, material);
+      gpsPolygonLine.computeLineDistances();
+      scene.add(gpsPolygonLine);
+
+      // Cập nhật tọa độ điểm đầu làm gốc GPS trên ô nhập
+      document.getElementById('input-gps').value = `${coords[0][0]}, ${coords[0][1]}`;
+
+      alert(`Đã nạp thành công Ranh đất 3D với ${coords.length} mốc tọa độ!`);
+      switchTab('survey');
+      osmMiniMap.classList.remove('hidden');
+    };
+
+    window.clearGPSPolygon = function() {
+      if (osmPolygonLayer && mapOSM) mapOSM.removeLayer(osmPolygonLayer);
+      if (gpsPolygonLine) scene.remove(gpsPolygonLine);
+      document.getElementById('polygon-coords-input').value = "";
+      alert("Đã xóa khung Ranh đất!");
+    };
+
     function updateClock() {
       const now = new Date();
       const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -360,13 +507,12 @@
     setInterval(updateClock, 1000);
     updateClock();
 
-    // 2. Khởi tạo Bản đồ nhỏ OSM
-    function initOSMMiniMap(lat = 10.769104, lng = 106.682382) {
+    function initOSMMiniMap(lat = 10.817777858561, lng = 106.70436976535) {
       if (!mapOSM) {
         mapOSM = L.map('osm-mini-map', {
           zoomControl: false,
           attributionControl: false
-        }).setView([lat, lng], 16);
+        }).setView([lat, lng], 17);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19
@@ -374,14 +520,14 @@
 
         markerOSM = L.marker([lat, lng]).addTo(mapOSM);
       } else {
-        mapOSM.setView([lat, lng], 16);
+        mapOSM.setView([lat, lng], 17);
         markerOSM.setLatLng([lat, lng]);
       }
     }
 
     function updateOSMMapFromInput() {
-      const gpsVal = document.getElementById('input-gps').value.split(',');
-      if (gpsVal.length === 2) {
+      const gpsVal = document.getElementById('input-gps').value.split(/[\s,;]+/);
+      if (gpsVal.length >= 2) {
         const lat = parseFloat(gpsVal[0].trim());
         const lng = parseFloat(gpsVal[1].trim());
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -390,7 +536,6 @@
       }
     }
 
-    // 3. Khởi tạo & Tạo Mã QR Code Tiếng Việt Không Dấu (Sửa triệt để lỗi phông chữ)
     function generateValuationQR() {
       const rawAddr = document.getElementById('input-address').value || 'Chua xac dinh';
       const cleanAddr = removeVietnameseTones(rawAddr);
@@ -399,7 +544,6 @@
       const buildVal = document.getElementById('build-val').innerText;
       const totalVal = document.getElementById('total-val').innerText;
 
-      // Nội dung quét QR bằng Tiếng Việt Không Dấu chuẩn hóa 100%
       const qrText = `CHUNG THU THAM DINH GIA - SMARTVAL PRO\nDia chi: ${cleanAddr}\n- QSD Dat: ${landVal}\n- Cong trinh XD: ${buildVal}\n=> TONG GIA TRI: ${totalVal}\nPham Minh Tuan - Appraiser`;
 
       if (!qrGenerator) {
@@ -416,7 +560,6 @@
       }
     }
 
-    // 4. Xử lý Nút Khách Hàng Xác Nhận
     window.confirmCustomer = function() {
       const customerName = prompt("Nhập tên khách hàng / chủ tài sản xác nhận:", "Nguyễn Văn A");
       if (customerName) {
@@ -425,7 +568,6 @@
       }
     };
 
-    // 5. Kích hoạt Camera
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -439,7 +581,6 @@
       }
     }
 
-    // 6. Khởi tạo Three.js Canvas
     function init3D() {
       const w = viewViewport.clientWidth;
       const h = viewViewport.clientHeight;
@@ -462,7 +603,6 @@
       animate();
     }
 
-    // Lấy GPS
     window.getLocationGPS = function() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -484,7 +624,6 @@
       }
     };
 
-    // 7. Đóng Băng Khung Hình Camera
     function freezeCameraView() {
       const ctx = freezeCanvas.getContext('2d');
       const w = viewViewport.clientWidth;
@@ -504,7 +643,6 @@
       if (mapOSM) mapOSM.invalidateSize();
     }
 
-    // 8. Xử lý Chạm Chọn Điểm
     function onPointerDown(event) {
       if (points.length >= 4) return;
 
@@ -570,7 +708,6 @@
       scene.add(frameLine);
     }
 
-    // 9. Bật / Tắt Xem Trọn Vẹn Ảnh (Đã cập nhật lại Viewport linh hoạt)
     window.toggleInfoPanel = function() {
       isPanelCollapsed = !isPanelCollapsed;
       const toggleIcon = document.getElementById('toggle-icon');
@@ -591,7 +728,6 @@
       lucide.createIcons();
     };
 
-    // 10. Chụp Ảnh Chứng Thư (Đã đưa QR Code xuống khung kết quả bên dưới phía tay phải)
     window.takeScreenshot = function() {
       const exportCanvas = document.createElement('canvas');
       const canvasW = 1080;
@@ -603,7 +739,6 @@
       ctx.fillStyle = '#050b14';
       ctx.fillRect(0, 0, canvasW, canvasH);
 
-      // 1. Vẽ Ảnh Camera / Freeze (Phần ảnh công trình phía trên)
       const photoH = 1100;
       if (!freezeCanvas.classList.contains('hidden')) {
         ctx.drawImage(freezeCanvas, 0, 0, canvasW, photoH);
@@ -611,10 +746,8 @@
         ctx.drawImage(video, 0, 0, canvasW, photoH);
       }
 
-      // 2. Vẽ Lớp Khung 3D Mỏ Neo
       ctx.drawImage(renderer.domElement, 0, 0, canvasW, photoH);
 
-      // 3. Vẽ Watermark Header
       ctx.fillStyle = 'rgba(5, 11, 20, 0.75)';
       ctx.fillRect(0, 0, canvasW, 140);
 
@@ -628,7 +761,6 @@
       const gpsStr = document.getElementById('input-gps').value;
       ctx.fillText(`Thời gian: ${clockStr} | GPS: ${gpsStr}`, 40, 105);
 
-      // 4. Vẽ Card Thông Tin Thẩm Định Ở Phía Dưới
       const cardY = photoH + 40;
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(30, cardY, canvasW - 60, 720);
@@ -679,7 +811,6 @@
       ctx.font = 'bold 38px monospace';
       ctx.fillText(`${totalVal}`, 60, cardY + 570);
 
-      // 5. VẼ MÃ QR CODE XUỐNG PHÍA DƯỚI BÊN PHẢI TRONG KHUNG KẾT QUẢ CẦN TRỐNG
       const qrCanvasSrc = document.getElementById('qr-canvas');
       if (qrCanvasSrc) {
         const qrBoxSize = 220;
