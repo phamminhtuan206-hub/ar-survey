@@ -5,20 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>SmartVal Pro - AR Field Survey & Google Sheets Polygon Store</title>
   
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Three.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  
-  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
 
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- QRious JS Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
   <style>
@@ -53,7 +45,6 @@
       pointer-events: auto;
     }
 
-    /* MINI MAP CƠ BẢN (GÓC DƯỚI PHẢI) */
     #osm-mini-map {
       position: absolute;
       bottom: 10px; right: 10px;
@@ -63,18 +54,17 @@
       border-radius: 12px;
       box-shadow: 0 0 12px rgba(2, 132, 199, 0.6);
       overflow: hidden;
-      transition: all 0.4s ease;
+      transition: all 0.3s ease;
     }
 
-    /* CSS PHÓNG TO BẢN ĐỒ RA GIỮA MÀN HÌNH */
     .map-center-large {
       bottom: auto !important;
       right: auto !important;
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) !important;
-      width: 90vw !important;
-      height: 40vh !important;
+      width: 92vw !important;
+      height: 42vh !important;
       z-index: 50 !important;
       border: 3px solid #38bdf8 !important;
       box-shadow: 0 0 30px rgba(2, 132, 199, 0.8) !important;
@@ -155,17 +145,14 @@
 </head>
 <body class="text-slate-100 select-none">
 
-  <!-- KHU VỰC AR VIEWPORT PHÍA TRÊN -->
   <div id="view-viewport">
     <video id="video-bg" autoplay playsinline muted></video>
     <canvas id="freeze-canvas" class="hidden"></canvas>
     <div id="canvas-container"></div>
     <div id="reticle-ui"></div>
 
-    <!-- BẢN ĐỒ NHỎ OSM -->
     <div id="osm-mini-map" class="hidden"></div>
 
-    <!-- Header HUD -->
     <header class="absolute top-0 left-0 right-0 z-20 p-2 bg-gradient-to-b from-slate-950/90 via-slate-950/40 to-transparent pointer-events-none">
       <div class="max-w-md mx-auto flex items-center justify-between">
         <div class="flex items-center gap-1.5">
@@ -193,7 +180,6 @@
       </div>
     </header>
 
-    <!-- Live Status HUD -->
     <div class="absolute top-11 left-0 right-0 z-20 px-2.5 pointer-events-none">
       <div class="max-w-md mx-auto flex justify-between items-center text-[10px]">
         <div class="flex items-center gap-1.5 bg-slate-950/70 border border-slate-800/80 px-2 py-0.5 rounded backdrop-blur-md">
@@ -216,7 +202,6 @@
       </div>
     </div>
 
-    <!-- Floating Action Buttons -->
     <div id="floating-actions" class="absolute top-20 right-2.5 z-30 hidden flex-col gap-1.5">
       <button onclick="toggleInfoPanel()" class="p-2 bg-slate-900/90 border border-sky-500/50 hover:bg-slate-800 rounded-full text-sky-400 shadow-lg backdrop-blur-md transition active:scale-95">
         <i id="toggle-icon" data-lucide="eye-off" class="w-4 h-4"></i>
@@ -227,10 +212,8 @@
     </div>
   </div>
 
-  <!-- BẢNG ĐIỀU KHIỂN NỬA DƯỚI DẠNG TAB MENU -->
   <div id="info-panel" class="fixed bottom-0 left-0 right-0 z-30 max-w-md mx-auto bg-slate-950 border-t border-sky-500/40 p-2.5 shadow-2xl transition-all duration-300 h-[50vh] flex flex-col justify-between">
     
-    <!-- THANH MENU TAB CHUYỂN ĐỔI CHỨC NĂNG -->
     <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
       <div class="flex gap-1.5">
         <button id="tab-survey-btn" onclick="switchTab('survey')" class="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 flex items-center gap-1 transition tab-btn-active">
@@ -249,7 +232,6 @@
       </button>
     </div>
 
-    <!-- TAB 1: NỘI DUNG KHẢO SÁT HIỆN TRƯỜNG -->
     <div id="tab-content-survey" class="flex-1 overflow-y-auto">
       <div class="mb-1.5">
         <input id="input-address" type="text" class="hud-input w-full font-sans text-xs text-slate-100 font-semibold" value="" placeholder="Nhập địa chỉ bất động sản..." oninput="generateValuationQR()">
@@ -259,7 +241,6 @@
         </div>
       </div>
 
-      <!-- Kích thước tự nhập -->
       <div class="grid grid-cols-5 gap-1 text-center mb-1.5">
         <div>
           <span class="text-[9px] text-slate-400 block mb-0.5">Rộng (m)</span>
@@ -283,7 +264,6 @@
         </div>
       </div>
 
-      <!-- Bảng kết quả định giá -->
       <div class="bg-gradient-to-r from-sky-950/60 via-slate-900/80 to-slate-950/60 border border-sky-500/30 rounded-xl p-2 mb-2">
         <div class="flex justify-between items-center mb-1 border-b border-sky-500/20 pb-0.5">
           <span class="text-[10px] font-extrabold text-sky-400 uppercase tracking-wider font-sans">KẾT QUẢ ĐỊNH GIÁ TỰ ĐỘNG</span>
@@ -316,9 +296,7 @@
       </div>
     </div>
 
-    <!-- TAB 2: QUẢN LÝ DỮ LIỆU ĐỒNG BỘ TỪ GOOGLE SHEETS -->
     <div id="tab-content-polygon" class="flex-1 overflow-y-auto hidden pr-1">
-      <!-- Khung nhập nhanh thêm tài sản mới vào Google Sheets -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 mb-2 space-y-1.5">
         <input id="asset-name-input" type="text" class="hud-input w-full text-[11px]" placeholder="Cột A: Tên tài sản (VD: Thửa 88 - Bình Lợi Trung)">
         <textarea id="polygon-coords-input" class="hud-input w-full h-16 font-mono text-[10px] leading-snug p-1.5" placeholder="Cột B: Polygon tọa độ GPS:
@@ -344,7 +322,6 @@
         </div>
       </div>
 
-      <!-- Danh sách tài sản lấy từ Google Sheets -->
       <div>
         <div class="flex justify-between items-center mb-1">
           <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Kho dữ liệu 'Ranh GPS'</span>
@@ -356,7 +333,6 @@
       </div>
     </div>
 
-    <!-- HÀNG NÚT THAO TÁC BOTTOM -->
     <div class="grid grid-cols-4 gap-1.5 pt-1.5 border-t border-slate-800">
       <button onclick="resetPoints()" class="py-2 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 rounded-xl text-[11px] font-bold text-slate-300 flex items-center justify-center gap-1 transition shadow-md">
         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
@@ -383,7 +359,6 @@
   <script>
     lucide.createIcons();
 
-    // LINK APPS SCRIPT ĐÃ UPDATE TỪ TRƯỚC
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyi3R1sE7U1ycR5tlQLojkXY32ogbq4P6N4B13HCY-9FhgkHOAH9-b0CXspnkz7bMctqQ/exec";
 
     const video = document.getElementById('video-bg');
@@ -405,7 +380,6 @@
     let qrGenerator = null;
     let currentSheetsData = [];
 
-    // TẢI DỮ LIỆU TỪ GOOGLE SHEETS
     function fetchFromGoogleSheets() {
       const listContainer = document.getElementById('sheets-assets-list');
       const countLabel = document.getElementById('sheets-count');
@@ -461,7 +435,6 @@
       });
     }
 
-    // HÀM ẨN BẢN ĐỒ VÀ XÓA VIEW 3D
     window.clearCurrent3DView = function() {
       if (gps3DGroup) {
         scene.remove(gps3DGroup);
@@ -472,7 +445,7 @@
         osmPolygonLayer = null;
       }
       osmMiniMap.classList.add('hidden');
-      osmMiniMap.classList.remove('map-center-large'); // Đưa bản đồ về kích thước mini
+      osmMiniMap.classList.remove('map-center-large');
       alert("Đã ẩn ranh đất khỏi bản đồ!");
     };
 
@@ -513,11 +486,6 @@
       renderPolygonOnMapAnd3D(coords);
       document.getElementById('input-address').value = item.name;
       document.getElementById('input-gps').value = `${coords[0][0]}, ${coords[0][1]}`;
-
-      // Tạm thời TẮT dòng này để không tự động chuyển sang tab Khảo sát AR
-      // switchTab('survey');
-      
-      alert(`Đã hiển thị ranh đất trên Bản đồ cho: ${item.name}`);
     };
 
     window.deleteSheetRow = function(rowIndex) {
@@ -562,50 +530,45 @@
       return coords;
     }
 
-    function renderPolygonOnMapAnd3D(coords) {
-      if (mapOSM) {
-        if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
-        osmPolygonLayer = L.polygon(coords, { color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35 }).addTo(mapOSM);
-        mapOSM.fitBounds(osmPolygonLayer.getBounds());
+    // HÀM KHỞI TẠO VÀ CẬP NHẬT TILE BẢN ĐỒ CHUẨN
+    function initOSMMiniMap(lat = 10.817777858561, lng = 106.70436976535) {
+      if (!mapOSM) {
+        mapOSM = L.map('osm-mini-map', {
+          zoomControl: false,
+          attributionControl: false
+        }).setView([lat, lng], 17);
+
+        // Đổi nguồn Tile sang CartoDB Voyagers giúp tải đường xá nhanh và không bị lỗi ảnh trắng
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+          subdomains: 'abcd'
+        }).addTo(mapOSM);
+
+        markerOSM = L.marker([lat, lng]).addTo(mapOSM);
+      } else {
+        mapOSM.setView([lat, lng], 17);
+        markerOSM.setLatLng([lat, lng]);
       }
+    }
 
-      // Tạm thời vô hiệu hóa khối lệnh vẽ 3D trên màn hình AR
-      /*
-      if (gps3DGroup) scene.remove(gps3DGroup);
-      gps3DGroup = new THREE.Group();
-      const originLat = coords[0][0];
-      const originLng = coords[0][1];
-      const poly3DPoints = [];
-      coords.forEach((pt) => {
-        const dLatMeters = (pt[0] - originLat) * 111320;
-        const dLngMeters = (pt[1] - originLng) * 40075000 * Math.cos(originLat * Math.PI / 180) / 360;
-        const x = dLngMeters * 0.25;
-        const y = dLatMeters * 0.25;
-        const z = -1.5;
-        const vec = new THREE.Vector3(x, y, z);
-        poly3DPoints.push(vec);
-      });
-      poly3DPoints.push(poly3DPoints[0]);
-      const lineGeo = new THREE.BufferGeometry().setFromPoints(poly3DPoints);
-      const lineMat = new THREE.LineBasicMaterial({ color: 0x38bdf8, linewidth: 5 });
-      const lineMesh = new THREE.Line(lineGeo, lineMat);
-      gps3DGroup.add(lineMesh);
-      scene.add(gps3DGroup);
-      */
+    function renderPolygonOnMapAnd3D(coords) {
+      initOSMMiniMap(coords[0][0], coords[0][1]);
 
-      // Phóng to bản đồ OSM ra chính giữa màn hình
+      if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
+      osmPolygonLayer = L.polygon(coords, { color: '#0284c7', weight: 3, fillColor: '#38bdf8', fillOpacity: 0.4 }).addTo(mapOSM);
+
       osmMiniMap.classList.remove('hidden');
       osmMiniMap.classList.add('map-center-large');
       
-      // Fix lỗi hiển thị tile map khi đổi CSS kích thước
+      // Xử lý vẽ lại Tile bản đồ sau khi kích thước khung thay đổi
       setTimeout(() => {
         if (mapOSM) {
-          mapOSM.invalidateSize();
+          mapOSM.invalidateSize(true);
           if (osmPolygonLayer) {
-            mapOSM.fitBounds(osmPolygonLayer.getBounds());
+            mapOSM.fitBounds(osmPolygonLayer.getBounds(), { padding: [20, 20] });
           }
         }
-      }, 300);
+      }, 250);
     }
 
     function removeVietnameseTones(str) {
@@ -655,24 +618,6 @@
     }
     setInterval(updateClock, 1000);
     updateClock();
-
-    function initOSMMiniMap(lat = 10.817777858561, lng = 106.70436976535) {
-      if (!mapOSM) {
-        mapOSM = L.map('osm-mini-map', {
-          zoomControl: false,
-          attributionControl: false
-        }).setView([lat, lng], 17);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19
-        }).addTo(mapOSM);
-
-        markerOSM = L.marker([lat, lng]).addTo(mapOSM);
-      } else {
-        mapOSM.setView([lat, lng], 17);
-        markerOSM.setLatLng([lat, lng]);
-      }
-    }
 
     function updateOSMMapFromInput() {
       const gpsVal = document.getElementById('input-gps').value.split(/[\s,;]+/);
