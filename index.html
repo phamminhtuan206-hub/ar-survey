@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>SmartVal Pro - AR Field Survey & Saved Polygons</title>
+  <title>SmartVal Pro - AR Field Survey & Google Sheets Polygon Store</title>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -221,8 +221,8 @@
           <span>Khảo sát AR</span>
         </button>
         <button id="tab-polygon-btn" onclick="switchTab('polygon')" class="px-3 py-1 bg-slate-900 border border-slate-700 rounded-lg text-[11px] text-slate-300 flex items-center gap-1 transition">
-          <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
-          <span>Ranh GPS (<span id="saved-count">0</span>/5)</span>
+          <i data-lucide="sheet" class="w-3.5 h-3.5"></i>
+          <span>Kho Sheets (<span id="sheets-count">0</span>)</span>
         </button>
       </div>
 
@@ -299,36 +299,36 @@
       </div>
     </div>
 
-    <!-- TAB 2: QUẢN LÝ & LƯU TRỮ RANH ĐẤT POLYGON -->
+    <!-- TAB 2: QUẢN LÝ DỮ LIỆU ĐỒNG BỘ TỪ GOOGLE SHEETS -->
     <div id="tab-content-polygon" class="flex-1 overflow-y-auto hidden pr-1">
-      <!-- Khung nhập tài sản mới -->
+      <!-- Khung nhập nhanh thêm tài sản mới vào Google Sheets -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-2 mb-2 space-y-1.5">
-        <input id="asset-name-input" type="text" class="hud-input w-full text-[11px]" placeholder="Tên / Địa chỉ tài sản...">
-        <textarea id="polygon-coords-input" class="hud-input w-full h-16 font-mono text-[10px] leading-snug p-1.5" placeholder="Dán tọa độ (khoảng trắng / phẩy / tab):
+        <input id="asset-name-input" type="text" class="hud-input w-full text-[11px]" placeholder="Cột A: Tên tài sản (VD: Thửa 88 - Bình Lợi Trung)">
+        <textarea id="polygon-coords-input" class="hud-input w-full h-16 font-mono text-[10px] leading-snug p-1.5" placeholder="Cột B: Polygon tọa độ GPS:
 10.817777858561 106.70436976535
 10.817738858562 106.70437376644
 10.817723858769 106.70423576637"></textarea>
         
         <div class="flex gap-1.5">
-          <button onclick="saveCurrentPolygon()" class="btn-action-glow flex-1 py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1">
-            <i data-lucide="save" class="w-3 h-3"></i>
-            <span>Lưu Máy</span>
+          <button onclick="addAssetToGoogleSheets()" class="btn-action-glow flex-1 py-1.5 rounded text-[10px] font-bold flex items-center justify-center gap-1">
+            <i data-lucide="plus-circle" class="w-3 h-3"></i>
+            <span>Thêm vào Sheet Ranh GPS</span>
           </button>
-          <button onclick="syncToCloud()" class="py-1.5 px-2 bg-sky-600 hover:bg-sky-500 border border-sky-400/50 rounded text-[10px] text-white font-bold flex items-center gap-1">
-            <i data-lucide="cloud-upload" class="w-3 h-3"></i>
-            <span>Đồng bộ PC/Mobile</span>
+          <button onclick="fetchFromGoogleSheets()" class="py-1.5 px-2.5 bg-sky-600 hover:bg-sky-500 border border-sky-400/50 rounded text-[10px] text-white font-bold flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+            <span>Tải dữ liệu</span>
           </button>
         </div>
       </div>
 
-      <!-- Danh sách tài sản đã lưu -->
+      <!-- Danh sách tài sản lấy từ Google Sheets -->
       <div>
         <div class="flex justify-between items-center mb-1">
-          <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Tài sản đã lưu</span>
-          <button onclick="clearAllSavedPolygons()" class="text-[9px] text-rose-400 hover:underline">Xóa tất cả</button>
+          <span class="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Kho dữ liệu 'Ranh GPS'</span>
+          <button onclick="clearAllSheetsData()" class="text-[9px] text-rose-400 hover:underline">Clear toàn bộ Sheet</button>
         </div>
-        <div id="saved-assets-list" class="space-y-1.5">
-          <!-- Render danh sách ở đây -->
+        <div id="sheets-assets-list" class="space-y-1.5">
+          <p class="text-[10px] text-slate-500 italic text-center py-2">Đang kết nối kho Google Sheets...</p>
         </div>
       </div>
     </div>
@@ -360,6 +360,7 @@
   <script>
     lucide.createIcons();
 
+    // LINK APPS SCRIPT KẾT NỐI VỚI GOOGLE SHEET 1bk7D4h_Msfd_UrBnnAoXbzfCg-QRZxJniLgqbHJMgSU
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3w-5j3oWFKABnpw9HINSjWokCkJExXX3fmR8eDTJg7mnPBlvc4TBNsxd936u8PUA7/exec";
 
     const video = document.getElementById('video-bg');
@@ -379,52 +380,59 @@
 
     let mapOSM = null, markerOSM = null, osmPolygonLayer = null;
     let qrGenerator = null;
+    let currentSheetsData = [];
 
-    const STORAGE_KEY = "SMARTVAL_SAVED_POLYGONS_V2";
+    // TẢI DỮ LIỆU TỪ KHO GOOGLE SHEETS (TAB: Ranh GPS)
+    function fetchFromGoogleSheets() {
+      const listContainer = document.getElementById('sheets-assets-list');
+      listContainer.innerHTML = `<p class="text-[10px] text-sky-400 italic text-center py-2">Đang đồng bộ dữ liệu từ Google Sheets...</p>`;
 
-    function getSavedPolygons() {
-      const data = localStorage.getItem(STORAGE_KEY);
-      return data ? JSON.parse(data) : [];
+      fetch(GAS_WEB_APP_URL)
+        .then(res => res.json())
+        .then(data => {
+          currentSheetsData = data;
+          renderSheetsDataList(data);
+        })
+        .catch(err => {
+          listContainer.innerHTML = `<p class="text-[10px] text-rose-400 italic text-center py-2">Lỗi tải dữ liệu. Hãy kiểm tra kết nối mạng!</p>`;
+        });
     }
 
-    function savePolygonData(list) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-      renderSavedAssetsList();
-    }
+    function renderSheetsDataList(data) {
+      document.getElementById('sheets-count').innerText = data.length;
+      const listContainer = document.getElementById('sheets-assets-list');
+      listContainer.innerHTML = "";
 
-    function renderSavedAssetsList() {
-      const list = getSavedPolygons();
-      document.getElementById('saved-count').innerText = list.length;
-      const container = document.getElementById('saved-assets-list');
-      container.innerHTML = "";
-
-      if (list.length === 0) {
-        container.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">Chưa lưu tài sản nào (Tối đa 5 tài sản)</p>`;
+      if (data.length === 0) {
+        listContainer.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">Kho 'Ranh GPS' hiện đang trống!</p>`;
         return;
       }
 
-      list.forEach((item, index) => {
+      data.forEach((item, idx) => {
+        const parsedCoords = parseCoordinates(item.polygonText);
         const itemEl = document.createElement('div');
         itemEl.className = "flex items-center justify-between bg-slate-900 border border-slate-800 p-1.5 rounded-lg text-[10px]";
         itemEl.innerHTML = `
           <div class="flex-1 pr-1 truncate">
-            <p class="font-bold text-sky-300 truncate">${index + 1}. ${item.name || 'Thửa đất chưa tên'}</p>
-            <p class="font-mono text-slate-400 text-[9px] truncate">${item.coords.length} mốc | ${item.coords[0][0]}, ${item.coords[0][1]}</p>
+            <p class="font-bold text-sky-300 truncate">${idx + 1}. ${item.name || 'Bất động sản ' + item.rowIndex}</p>
+            <p class="font-mono text-slate-400 text-[9px] truncate">${parsedCoords.length} mốc | ${parsedCoords[0] ? parsedCoords[0].join(', ') : 'Chưa có tọa độ'}</p>
           </div>
           <div class="flex items-center gap-1">
-            <button onclick="applySavedPolygon(${index})" class="px-2 py-0.5 bg-emerald-600 text-white rounded font-bold hover:bg-emerald-500">Xem AR 3D</button>
-            <button onclick="deleteSavedPolygon(${index})" class="px-1.5 py-0.5 bg-rose-900/60 text-rose-300 border border-rose-700/50 rounded hover:bg-rose-800">Xóa</button>
+            <button onclick="applySheetPolygon(${idx})" class="px-2 py-0.5 bg-emerald-600 text-white rounded font-bold hover:bg-emerald-500">Xem AR 3D</button>
+            <button onclick="deleteSheetRow(${item.rowIndex})" class="px-1.5 py-0.5 bg-rose-900/60 text-rose-300 border border-rose-700/50 rounded hover:bg-rose-800">Xóa</button>
           </div>
         `;
-        container.appendChild(itemEl);
+        listContainer.appendChild(itemEl);
       });
     }
 
-    // ĐỒNG BỘ ĐA THIẾT BỊ PC <-> DI ĐỘNG QUA CLOUD
-    window.syncToCloud = function() {
-      const list = getSavedPolygons();
-      if (list.length === 0) {
-        alert("Chưa có tài sản nào để đồng bộ!");
+    // THÊM TÀI SẢN MỚI TRỰC TIẾP VÀO SHEET
+    window.addAssetToGoogleSheets = function() {
+      const name = document.getElementById('asset-name-input').value.trim();
+      const polygonText = document.getElementById('polygon-coords-input').value.trim();
+
+      if (!name || !polygonText) {
+        alert("Vui lòng nhập Tên tài sản (Cột A) và Tọa độ Polygon (Cột B)!");
         return;
       }
 
@@ -432,77 +440,60 @@
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "savePolygons", polygons: list })
+        body: JSON.stringify({ action: "addPolygon", name: name, polygonText: polygonText })
       })
-      .then(() => alert("Đã tải danh sách tài sản lên Cloud thành công! Khi mở điện thoại bấm nút 'GPS' hoặc vào tab Ranh GPS để xem."))
-      .catch(err => alert("Lỗi đồng bộ Cloud: " + err));
+      .then(() => {
+        alert(`Đã lưu tài sản "${name}" vào Google Sheets thành công!`);
+        document.getElementById('asset-name-input').value = "";
+        document.getElementById('polygon-coords-input').value = "";
+        setTimeout(fetchFromGoogleSheets, 1000);
+      })
+      .catch(err => alert("Lỗi khi thêm tài sản: " + err));
     };
 
-    window.saveCurrentPolygon = function() {
-      const list = getSavedPolygons();
-      if (list.length >= 5) {
-        alert("Đã đạt tối đa 5 tài sản! Hãy xóa bớt tài sản cũ.");
+    // KÍCH HOẠT KHUNG RANH 3D TỪ DỮ LIỆU SHEET
+    window.applySheetPolygon = function(index) {
+      const item = currentSheetsData[index];
+      if (!item) return;
+
+      const coords = parseCoordinates(item.polygonText);
+      if (coords.length < 3) {
+        alert("Dữ liệu tọa độ ở cột B chưa đủ 3 mốc!");
         return;
       }
 
-      const name = document.getElementById('asset-name-input').value.trim() || `Tài sản ${list.length + 1}`;
-      const textVal = document.getElementById('polygon-coords-input').value.trim();
-
-      if (!textVal) {
-        alert("Vui lòng dán tọa độ GPS trước!");
-        return;
-      }
-
-      const parsedCoords = parseCoordinates(textVal);
-      if (parsedCoords.length < 3) {
-        alert("Tọa độ không hợp lệ hoặc ít hơn 3 mốc!");
-        return;
-      }
-
-      list.push({
-        name: name,
-        coords: parsedCoords,
-        rawText: textVal,
-        createdAt: new Date().toLocaleString('vi-VN')
-      });
-
-      savePolygonData(list);
-      document.getElementById('asset-name-input').value = "";
-      document.getElementById('polygon-coords-input').value = "";
-      alert(`Đã lưu tài sản: ${name}`);
-    };
-
-    window.applySavedPolygon = function(index) {
-      const list = getSavedPolygons();
-      if (!list[index]) return;
-
-      const item = list[index];
-      renderPolygonOnMapAnd3D(item.coords);
-
+      renderPolygonOnMapAnd3D(coords);
       document.getElementById('input-address').value = item.name;
-      document.getElementById('input-gps').value = `${item.coords[0][0]}, ${item.coords[0][1]}`;
+      document.getElementById('input-gps').value = `${coords[0][0]}, ${coords[0][1]}`;
 
       switchTab('survey');
-      alert(`Đã hiển thị Khung Ranh 3D Dạ Quang trên màn hình Camera cho: ${item.name}`);
+      alert(`Đã hiển thị Khung Ranh 3D Dạ Quang cho: ${item.name}`);
     };
 
-    window.deleteSavedPolygon = function(index) {
-      const list = getSavedPolygons();
-      if (confirm(`Xóa tài sản: "${list[index]?.name}"?`)) {
-        list.splice(index, 1);
-        savePolygonData(list);
+    window.deleteSheetRow = function(rowIndex) {
+      if (confirm(`Xóa dòng ${rowIndex} trong Google Sheet?`)) {
+        fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "deletePolygon", rowIndex: rowIndex })
+        }).then(() => setTimeout(fetchFromGoogleSheets, 1000));
       }
     };
 
-    window.clearAllSavedPolygons = function() {
-      if (confirm("Xóa toàn bộ tài sản đã lưu?")) {
-        localStorage.removeItem(STORAGE_KEY);
-        renderSavedAssetsList();
-        clearGPSPolygon();
+    window.clearAllSheetsData = function() {
+      if (confirm("Xóa toàn bộ kho dữ liệu Ranh GPS trong Google Sheet?")) {
+        fetch(GAS_WEB_APP_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "clearAll" })
+        }).then(() => setTimeout(fetchFromGoogleSheets, 1000));
       }
     };
 
     function parseCoordinates(text) {
+      if (!text) return [];
       const lines = text.split('\n');
       const coords = [];
       lines.forEach(line => {
@@ -521,16 +512,14 @@
       return coords;
     }
 
-    // SỬA LỖI VẼ KHUNG RANH 3D NỔI TRÊN MÀN HÌNH CAMERA AR
+    // DỰNG KHUNG RANH 3D NỔI TRÊN CAMERA AR REALTIME
     function renderPolygonOnMapAnd3D(coords) {
-      // 1. Cập nhật Bản đồ nhỏ OSM
       if (mapOSM) {
         if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
         osmPolygonLayer = L.polygon(coords, { color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35 }).addTo(mapOSM);
         mapOSM.fitBounds(osmPolygonLayer.getBounds());
       }
 
-      // 2. Dựng Khung Ranh 3D Dạ Quang nổi trên không gian Camera AR
       if (gps3DGroup) scene.remove(gps3DGroup);
       gps3DGroup = new THREE.Group();
 
@@ -538,20 +527,17 @@
       const originLng = coords[0][1];
       const poly3DPoints = [];
 
-      coords.forEach((pt, idx) => {
-        // Quy đổi độ lệch Lat/Long sang mét thực địa
+      coords.forEach((pt) => {
         const dLatMeters = (pt[0] - originLat) * 111320;
         const dLngMeters = (pt[1] - originLng) * 40075000 * Math.cos(originLat * Math.PI / 180) / 360;
 
-        // Chuẩn hóa quy mô sang hệ tọa độ Three.js AR Viewport
         const x = dLngMeters * 0.25;
         const y = dLatMeters * 0.25;
-        const z = -1.5; // Đặt khung 3D phía trước camera
+        const z = -1.5;
 
         const vec = new THREE.Vector3(x, y, z);
         poly3DPoints.push(vec);
 
-        // Tạo Cột mốc 3D Neon tại các góc ranh
         const nodeSphere = new THREE.Mesh(
           new THREE.SphereGeometry(0.08, 16, 16),
           new THREE.MeshBasicMaterial({ color: 0x34d399 })
@@ -560,7 +546,6 @@
         gps3DGroup.add(nodeSphere);
       });
 
-      // Nối kín các đỉnh ranh đất
       poly3DPoints.push(poly3DPoints[0]);
 
       const lineGeo = new THREE.BufferGeometry().setFromPoints(poly3DPoints);
@@ -610,12 +595,6 @@
         surveyContent.classList.add('hidden');
       }
       lucide.createIcons();
-    };
-
-    window.clearGPSPolygon = function() {
-      if (osmPolygonLayer && mapOSM) mapOSM.removeLayer(osmPolygonLayer);
-      if (gps3DGroup) scene.remove(gps3DGroup);
-      document.getElementById('polygon-coords-input').value = "";
     };
 
     function updateClock() {
@@ -1067,7 +1046,7 @@
     init3D();
     initOSMMiniMap();
     generateValuationQR();
-    renderSavedAssetsList();
+    fetchFromGoogleSheets();
   </script>
 </body>
 </html>
