@@ -360,7 +360,7 @@
   <script>
     lucide.createIcons();
 
-    // LINK APPS SCRIPT KẾT NỐI VỚI GOOGLE SHEET 1bk7D4h_Msfd_UrBnnAoXbzfCg-QRZxJniLgqbHJMgSU
+    // LINK APPS SCRIPT
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbx3w-5j3oWFKABnpw9HINSjWokCkJExXX3fmR8eDTJg7mnPBlvc4TBNsxd936u8PUA7/exec";
 
     const video = document.getElementById('video-bg');
@@ -382,24 +382,36 @@
     let qrGenerator = null;
     let currentSheetsData = [];
 
-    // TẢI DỮ LIỆU TỪ KHO GOOGLE SHEETS (TAB: Ranh GPS)
+    // TẢI DỮ LIỆU CHUẨN TỪ GOOGLE SHEETS
     function fetchFromGoogleSheets() {
       const listContainer = document.getElementById('sheets-assets-list');
+      const countLabel = document.getElementById('sheets-count');
       listContainer.innerHTML = `<p class="text-[10px] text-sky-400 italic text-center py-2">Đang đồng bộ dữ liệu từ Google Sheets...</p>`;
 
-      fetch(GAS_WEB_APP_URL)
-        .then(res => res.json())
-        .then(data => {
+      fetch(GAS_WEB_APP_URL, {
+        method: "GET",
+        redirect: "follow"
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
           currentSheetsData = data;
+          countLabel.innerText = data.length;
           renderSheetsDataList(data);
-        })
-        .catch(err => {
-          listContainer.innerHTML = `<p class="text-[10px] text-rose-400 italic text-center py-2">Lỗi tải dữ liệu. Hãy kiểm tra kết nối mạng!</p>`;
-        });
+        } else {
+          currentSheetsData = [];
+          countLabel.innerText = "0";
+          listContainer.innerHTML = `<p class="text-[10px] text-slate-500 italic text-center py-2">Kho 'Ranh GPS' hiện đang trống hoặc chưa khởi tạo!</p>`;
+        }
+      })
+      .catch(err => {
+        currentSheetsData = [];
+        countLabel.innerText = "0";
+        listContainer.innerHTML = `<p class="text-[10px] text-rose-400 italic text-center py-2">Lỗi tải dữ liệu. Vui lòng bấm 'Tải dữ liệu' để thử lại!</p>`;
+      });
     }
 
     function renderSheetsDataList(data) {
-      document.getElementById('sheets-count').innerText = data.length;
       const listContainer = document.getElementById('sheets-assets-list');
       listContainer.innerHTML = "";
 
@@ -426,7 +438,6 @@
       });
     }
 
-    // THÊM TÀI SẢN MỚI TRỰC TIẾP VÀO SHEET
     window.addAssetToGoogleSheets = function() {
       const name = document.getElementById('asset-name-input').value.trim();
       const polygonText = document.getElementById('polygon-coords-input').value.trim();
@@ -446,12 +457,11 @@
         alert(`Đã lưu tài sản "${name}" vào Google Sheets thành công!`);
         document.getElementById('asset-name-input').value = "";
         document.getElementById('polygon-coords-input').value = "";
-        setTimeout(fetchFromGoogleSheets, 1000);
+        setTimeout(fetchFromGoogleSheets, 1200);
       })
       .catch(err => alert("Lỗi khi thêm tài sản: " + err));
     };
 
-    // KÍCH HOẠT KHUNG RANH 3D TỪ DỮ LIỆU SHEET
     window.applySheetPolygon = function(index) {
       const item = currentSheetsData[index];
       if (!item) return;
@@ -477,7 +487,7 @@
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "deletePolygon", rowIndex: rowIndex })
-        }).then(() => setTimeout(fetchFromGoogleSheets, 1000));
+        }).then(() => setTimeout(fetchFromGoogleSheets, 1200));
       }
     };
 
@@ -488,7 +498,7 @@
           mode: "no-cors",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "clearAll" })
-        }).then(() => setTimeout(fetchFromGoogleSheets, 1000));
+        }).then(() => setTimeout(fetchFromGoogleSheets, 1200));
       }
     };
 
@@ -512,7 +522,6 @@
       return coords;
     }
 
-    // DỰNG KHUNG RANH 3D NỔI TRÊN CAMERA AR REALTIME
     function renderPolygonOnMapAnd3D(coords) {
       if (mapOSM) {
         if (osmPolygonLayer) mapOSM.removeLayer(osmPolygonLayer);
